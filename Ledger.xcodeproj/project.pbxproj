@@ -581,6 +581,7 @@
 		A1FDF07A20D2B8CF00F92CAF /* p256.c in Sources */ = {isa = PBXBuildFile; fileRef = A1FDF07720D2B8CF00F92CAF /* p256.c */; };
 		A1FDF0EE20D2C1AF00F92CAF /* BATClient.h in Headers */ = {isa = PBXBuildFile; fileRef = A1FDF0EC20D2C1AF00F92CAF /* BATClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A1FDF0EF20D2C1AF00F92CAF /* BATClient.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1FDF0ED20D2C1AF00F92CAF /* BATClient.mm */; };
+		C615FAB8211C577400A8168C /* err_data.c in Sources */ = {isa = PBXBuildFile; fileRef = C615FAB7211C577400A8168C /* err_data.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1768,6 +1769,7 @@
 		A1FDF0D020D2B9F500F92CAF /* gtest-printers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "gtest-printers.h"; sourceTree = "<group>"; };
 		A1FDF0EC20D2C1AF00F92CAF /* BATClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BATClient.h; sourceTree = "<group>"; };
 		A1FDF0ED20D2C1AF00F92CAF /* BATClient.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = BATClient.mm; sourceTree = "<group>"; };
+		C615FAB7211C577400A8168C /* err_data.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = err_data.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -3851,6 +3853,7 @@
 				A1FDED0F20D2B6FB00F92CAF /* bn.errordata */,
 				A1FDED1020D2B6FB00F92CAF /* obj.errordata */,
 				A1FDED1220D2B6FB00F92CAF /* err.c */,
+				C615FAB7211C577400A8168C /* err_data.c */,
 				A1FDED1320D2B6FB00F92CAF /* ssl.errordata */,
 				A1FDED1420D2B6FB00F92CAF /* x509.errordata */,
 				A1FDED1520D2B6FB00F92CAF /* pkcs8.errordata */,
@@ -4728,6 +4731,7 @@
 				A1FDEE4A20D2B6FD00F92CAF /* v3_extku.c in Sources */,
 				A1FDEDE720D2B6FD00F92CAF /* rc4.c in Sources */,
 				A1FDEDE120D2B6FD00F92CAF /* poly1305.c in Sources */,
+				C615FAB8211C577400A8168C /* err_data.c in Sources */,
 				A1FDEEBA20D2B6FD00F92CAF /* spake25519.c in Sources */,
 				A1FDEE0220D2B6FD00F92CAF /* a_int.c in Sources */,
 				A1FDEEAA20D2B6FD00F92CAF /* fd.c in Sources */,
@@ -5209,6 +5213,7 @@
 				);
 				INFOPLIST_FILE = Ledger/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -5242,6 +5247,7 @@
 				);
 				INFOPLIST_FILE = Ledger/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -5356,7 +5362,10 @@
 					"$(PROJECT_DIR)/BoringSSL/src",
 					"$(PROJECT_DIR)/BoringSSL/src/crypto",
 				);
-				OTHER_CFLAGS = "-DOPENSSL_SMALL=1";
+				OTHER_CFLAGS = (
+					"-DOPENSSL_SMALL=1",
+					"-DOPENSSL_NO_ASM",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-fno-exceptions",
@@ -5382,7 +5391,10 @@
 					"$(PROJECT_DIR)/BoringSSL/src",
 					"$(PROJECT_DIR)/BoringSSL/src/crypto",
 				);
-				OTHER_CFLAGS = "-DOPENSSL_SMALL=1";
+				OTHER_CFLAGS = (
+					"-DOPENSSL_SMALL=1",
+					"-DOPENSSL_NO_ASM",
+				);
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-fno-exceptions",
