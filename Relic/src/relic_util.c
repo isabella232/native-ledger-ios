@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -42,6 +42,11 @@
 #include <android/log.h>
 #endif
 
+
+#if !defined __clang__
+#include <intrin.h>
+#endif
+
 /*============================================================================*/
 /* Private definitions                                                        */
 /*============================================================================*/
@@ -50,32 +55,11 @@
  * Buffer to hold printed messages.
  */
 #if ARCH == AVR
-
 #ifndef QUIET
-volatile char print_buf[128 + 1];
+volatile char print_buf[64 + 1];
 volatile char *util_print_ptr;
-
-#if OPSYS == DUINO
-/**
- * Send byte to serial port.
- */
-void uart_putchar(char c, FILE *stream) {
-    if (c == '\n') {
-        uart_putchar('\r', stream);
-    }
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
-}
-
-/**
- * Stream for serial port.
- */
-FILE uart_output = FDEV_SETUP_STREAM(uart_putchar, NULL, _FDEV_SETUP_WRITE);
-
 #endif
 #endif
-
-#endif /* QUIET */
 
 /*============================================================================*/
 /* Public definitions                                                         */
@@ -161,9 +145,17 @@ int util_bits_dig(dig_t a) {
 	}
 	return 0;
 #elif WORD == 32
+#if !defined __clang__
+	return DIGIT - __lzcnt(a);
+#else
 	return DIGIT - __builtin_clz(a);
+#endif
 #elif WORD == 64
+#if !defined __clang__
+	return DIGIT - __lzcnt64(a);
+#else
 	return DIGIT - __builtin_clzll(a);
+#endif
 #endif
 }
 
@@ -182,21 +174,14 @@ int util_cmp_const(const void * a, const void *b, int size) {
 
 void util_printf(const char *format, ...) {
 #ifndef QUIET
-#if ARCH == AVR && OPSYS == RELIC_NONE
+#if ARCH == AVR && OPSYS == NONE
 	util_print_ptr = print_buf + 1;
 	va_list list;
 	va_start(list, format);
-	vsnprintf_P((char *)util_print_ptr, sizeof(print_buf) - 1, format, list);
-	va_end(list);
+	vsnprintf_P((char *)util_print_ptr, 64, format, list);
 	print_buf[0] = (uint8_t)2;
-#elif ARCH == AVR && OPSYS == DUINO
-	stdout = &uart_output;
-	va_list list;
-	va_start(list, format);
-	vsnprintf_P((char *)print_buf, sizeof(print_buf), format, list);
-	printf("%s", (char *)print_buf);
 	va_end(list);
-#elif ARCH == MSP && OPSYS == RELIC_NONE
+#elif ARCH == MSP && OPSYS == NONE
 	va_list list;
 	va_start(list, format);
 	vprintf(format, list);
@@ -219,27 +204,15 @@ void util_printf(const char *format, ...) {
 void util_print_dig(dig_t a, int pad) {
 #if DIGIT == 64
 	if (pad) {
-		util_print("%.16" PRIX64, (uint64_t)a);
+		util_print("%.*" PRIX64, (int)(2 * sizeof(dig_t)), (uint64_t)a);
 	} else {
 		util_print("%" PRIX64, (uint64_t)a);
 	}
-#elif DIGIT == 32
-	if (pad) {
-		util_print("%.8" PRIX32, (uint32_t)a);
-	} else {
-		util_print("%" PRIX32, (uint32_t)a);
-	}
-#elif DIGIT == 16
-	if (pad) {
-		util_print("%.4" PRIX16, (uint16_t)a);
-	} else {
-		util_print("%" PRIX16, (uint16_t)a);
-	}
 #else
 	if (pad) {
-		util_print("%.2" PRIX8, (uint8_t)a);
+		util_print("%.*" PRIX32, (int)(2 * sizeof(dig_t)), (uint32_t)a);
 	} else {
-		util_print("%" PRIX8, (uint8_t)a);
+		util_print("%" PRIX32, (uint32_t)a);
 	}
 #endif
 }

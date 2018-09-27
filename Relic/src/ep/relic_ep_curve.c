@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -25,6 +25,7 @@
  *
  * Implementation of the prime elliptic curve utilities.
  *
+ * @version $Id$
  * @ingroup ep
  */
 
@@ -66,7 +67,7 @@ static void detect_opt(int *opt, fp_t a) {
 						if (fp_bits(a) <= FP_DIGIT) {
 							*opt = OPT_DIGIT;
 						} else {
-							*opt = RELIC_OPT_NONE;
+							*opt = OPT_NONE;
 						}
 					}
 				}
@@ -88,7 +89,7 @@ static void detect_opt(int *opt, fp_t a) {
 void ep_curve_init(void) {
 	ctx_t *ctx = core_get();
 #ifdef EP_PRECO
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		ctx->ep_ptr[i] = &(ctx->ep_pre[i]);
 	}
 #endif
@@ -97,7 +98,7 @@ void ep_curve_init(void) {
 	fp_new(ctx->ep_g.y);
 	fp_new(ctx->ep_g.z);
 #ifdef EP_PRECO
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		fp_new(ctx->ep_pre[i].x);
 		fp_new(ctx->ep_pre[i].y);
 		fp_new(ctx->ep_pre[i].z);
@@ -122,7 +123,7 @@ void ep_curve_clean(void) {
 	fp_free(ctx->ep_g.y);
 	fp_free(ctx->ep_g.z);
 #ifdef EP_PRECO
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		fp_free(ctx->ep_pre[i].x);
 		fp_free(ctx->ep_pre[i].y);
 		fp_free(ctx->ep_pre[i].z);

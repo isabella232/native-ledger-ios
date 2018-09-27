@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -25,6 +25,7 @@
  *
  * Implementation of the point multiplication on prime elliptic curves.
  *
+ * @version $Id$
  * @ingroup eb
  */
 
@@ -43,11 +44,6 @@ static void ep_mul_glv_imp(ep_t r, const ep_t p, const bn_t k) {
 	int8_t naf0[FP_BITS + 1], naf1[FP_BITS + 1], *t0, *t1;
 	bn_t n, k0, k1, v1[3], v2[3];
 	ep_t q, t[1 << (EP_WIDTH - 2)];
-
-	if (bn_is_zero(k)) {
-		ep_set_infty(r);
-		return;
-	}
 
 	bn_null(n);
 	bn_null(k0);
@@ -129,9 +125,6 @@ static void ep_mul_glv_imp(ep_t r, const ep_t p, const bn_t k) {
 		}
 		/* Convert r to affine coordinates. */
 		ep_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -158,33 +151,33 @@ static void ep_mul_glv_imp(ep_t r, const ep_t p, const bn_t k) {
 #if defined(EP_PLAIN) || defined(EP_SUPER)
 
 static void ep_mul_naf_imp(ep_t r, const ep_t p, const bn_t k) {
-	int i, l, n;
-	int8_t naf[FP_BITS + 1];
+	int l, i, n;
+	int8_t naf[FP_BITS + 1], *_k;
 	ep_t t[1 << (EP_WIDTH - 2)];
 
-	if (bn_is_zero(k)) {
-		ep_set_infty(r);
-		return;
+	for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
+		ep_null(t[i]);
 	}
 
 	TRY {
 		/* Prepare the precomputation table. */
 		for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
-			ep_null(t[i]);
 			ep_new(t[i]);
 		}
 		/* Compute the precomputation table. */
 		ep_tab(t, p, EP_WIDTH);
 
 		/* Compute the w-NAF representation of k. */
-		l = sizeof(naf);
+		l = FP_BITS + 1;
 		bn_rec_naf(naf, &l, k, EP_WIDTH);
 
+		_k = naf + l - 1;
+
 		ep_set_infty(r);
-		for (i = l - 1; i >= 0; i--) {
+		for (i = l - 1; i >= 0; i--, _k--) {
 			ep_dbl(r, r);
 
-			n = naf[i];
+			n = *_k;
 			if (n > 0) {
 				ep_add(r, r, t[n / 2]);
 			}
@@ -194,9 +187,6 @@ static void ep_mul_naf_imp(ep_t r, const ep_t p, const bn_t k) {
 		}
 		/* Convert r to affine coordinates. */
 		ep_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -217,17 +207,12 @@ static void ep_mul_naf_imp(ep_t r, const ep_t p, const bn_t k) {
 #if defined(EP_PLAIN) || defined(EP_SUPER)
 
 static void ep_mul_reg_imp(ep_t r, const ep_t p, const bn_t k) {
-	int i, j, l, n;
+	int l, i, j, n;
 	int8_t reg[CEIL(FP_BITS + 1, EP_WIDTH - 1)], *_k;
 	ep_t t[1 << (EP_WIDTH - 2)];
 
 	for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
 		ep_null(t[i]);
-	}
-
-	if (bn_is_zero(k)) {
-		ep_set_infty(r);
-		return;
 	}
 
 	TRY {
@@ -283,20 +268,22 @@ static void ep_mul_reg_imp(ep_t r, const ep_t p, const bn_t k) {
 #if EP_MUL == BASIC || !defined(STRIP)
 
 void ep_mul_basic(ep_t r, const ep_t p, const bn_t k) {
+	int i, l;
 	ep_t t;
 
 	ep_null(t);
 
-	if (bn_is_zero(k) || ep_is_infty(p)) {
+	if (bn_is_zero(k)) {
 		ep_set_infty(r);
 		return;
 	}
 
 	TRY {
 		ep_new(t);
+		l = bn_bits(k);
 
 		ep_copy(t, p);
-		for (int i = bn_bits(k) - 2; i >= 0; i--) {
+		for (i = l - 2; i >= 0; i--) {
 			ep_dbl(t, t);
 			if (bn_get_bit(k, i)) {
 				ep_add(t, t, p);
@@ -304,9 +291,6 @@ void ep_mul_basic(ep_t r, const ep_t p, const bn_t k) {
 		}
 
 		ep_norm(r, t);
-		if (bn_sign(k) == BN_NEG) {
-			ep_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -327,14 +311,18 @@ void ep_mul_slide(ep_t r, const ep_t p, const bn_t k) {
 
 	ep_null(q);
 
-	if (bn_is_zero(k) || ep_is_infty(p)) {
+	/* Initialize table. */
+	for (i = 0; i < (1 << (EP_WIDTH - 1)); i++) {
+		ep_null(t[i]);
+	}
+
+	if (bn_is_zero(k)) {
 		ep_set_infty(r);
 		return;
-	}
+	}	
 
 	TRY {
 		for (i = 0; i < (1 << (EP_WIDTH - 1)); i ++) {
-			ep_null(t[i]);
 			ep_new(t[i]);
 		}
 
@@ -371,9 +359,6 @@ void ep_mul_slide(ep_t r, const ep_t p, const bn_t k) {
 		}
 
 		ep_norm(r, q);
-		if (bn_sign(k) == BN_NEG) {
-			ep_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -396,7 +381,7 @@ void ep_mul_monty(ep_t r, const ep_t p, const bn_t k) {
 	ep_null(t[0]);
 	ep_null(t[1]);
 
-	if (bn_is_zero(k) || ep_is_infty(p)) {
+	if (bn_is_zero(k)) {
 		ep_set_infty(r);
 		return;
 	}
@@ -421,9 +406,7 @@ void ep_mul_monty(ep_t r, const ep_t p, const bn_t k) {
 		}
 
 		ep_norm(r, t[0]);
-		if (bn_sign(k) == BN_NEG) {
-			ep_neg(r, r);
-		}
+
 	} CATCH_ANY {
 		THROW(ERR_CAUGHT);
 	}
@@ -438,7 +421,7 @@ void ep_mul_monty(ep_t r, const ep_t p, const bn_t k) {
 #if EP_MUL == LWNAF || !defined(STRIP)
 
 void ep_mul_lwnaf(ep_t r, const ep_t p, const bn_t k) {
-	if (bn_is_zero(k) || ep_is_infty(p)) {
+	if (bn_is_zero(k)) {
 		ep_set_infty(r);
 		return;
 	}
@@ -460,7 +443,7 @@ void ep_mul_lwnaf(ep_t r, const ep_t p, const bn_t k) {
 #if EP_MUL == LWREG || !defined(STRIP)
 
 void ep_mul_lwreg(ep_t r, const ep_t p, const bn_t k) {
-	if (bn_is_zero(k) || ep_is_infty(p)) {
+	if (bn_is_zero(k)) {
 		ep_set_infty(r);
 		return;
 	}
@@ -484,7 +467,7 @@ void ep_mul_gen(ep_t r, const bn_t k) {
 		ep_set_infty(r);
 		return;
 	}
-
+		
 #ifdef EP_PRECO
 	ep_mul_fix(r, ep_curve_get_tab(), k);
 #else
@@ -507,11 +490,12 @@ void ep_mul_gen(ep_t r, const bn_t k) {
 }
 
 void ep_mul_dig(ep_t r, const ep_t p, dig_t k) {
+	int i, l;
 	ep_t t;
 
 	ep_null(t);
 
-	if (k == 0 || ep_is_infty(p)) {
+	if (k == 0) {
 		ep_set_infty(r);
 		return;
 	}
@@ -519,8 +503,11 @@ void ep_mul_dig(ep_t r, const ep_t p, dig_t k) {
 	TRY {
 		ep_new(t);
 
+		l = util_bits_dig(k);
+
 		ep_copy(t, p);
-		for (int i = util_bits_dig(k) - 2; i >= 0; i--) {
+
+		for (i = l - 2; i >= 0; i--) {
 			ep_dbl(t, t);
 			if (k & ((dig_t)1 << i)) {
 				ep_add(t, t, p);

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -80,57 +80,57 @@ enum {
 /**
  * Size of a precomputation table using the binary method.
  */
-#define RELIC_EB_TABLE_BASIC		(FB_BITS)
+#define EB_TABLE_BASIC		(FB_BITS)
 
 /**
  * Size of a precomputation table using Yao's windowing method.
  */
-#define RELIC_EB_TABLE_YAOWI      (FB_BITS / EB_DEPTH + 1)
+#define EB_TABLE_YAOWI      (FB_BITS / EB_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the NAF windowing method.
  */
-#define RELIC_EB_TABLE_NAFWI      (FB_BITS / EB_DEPTH + 1)
+#define EB_TABLE_NAFWI      (FB_BITS / EB_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the single-table comb method.
  */
-#define RELIC_EB_TABLE_COMBS      (1 << EB_DEPTH)
+#define EB_TABLE_COMBS      (1 << EB_DEPTH)
 
 /**
  * Size of a precomputation table using the double-table comb method.
  */
-#define RELIC_EB_TABLE_COMBD		(1 << (EB_DEPTH + 1))
+#define EB_TABLE_COMBD		(1 << (EB_DEPTH + 1))
 
 /**
  * Size of a precomputation table using the w-(T)NAF method.
  */
-#define RELIC_EB_TABLE_LWNAF		(1 << (EB_DEPTH - 2))
+#define EB_TABLE_LWNAF		(1 << (EB_DEPTH - 2))
 
 /**
  * Size of a precomputation table using the chosen algorithm.
  */
 #if EB_FIX == BASIC
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_BASIC
+#define EB_TABLE			EB_TABLE_BASIC
 #elif EB_FIX == YAOWI
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_YAOWI
+#define EB_TABLE			EB_TABLE_YAOWI
 #elif EB_FIX == NAFWI
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_NAFWI
+#define EB_TABLE			EB_TABLE_NAFWI
 #elif EB_FIX == COMBS
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_COMBS
+#define EB_TABLE			EB_TABLE_COMBS
 #elif EB_FIX == COMBD
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_COMBD
+#define EB_TABLE			EB_TABLE_COMBD
 #elif EB_FIX == LWNAF
-#define RELIC_EB_TABLE			RELIC_EB_TABLE_LWNAF
+#define EB_TABLE			EB_TABLE_LWNAF
 #endif
 
 /**
  * Maximum size of a precomputation table.
  */
 #ifdef STRIP
-#define RELIC_EB_TABLE_MAX 		RELIC_EB_TABLE
+#define EB_TABLE_MAX 		EB_TABLE
 #else
-#define RELIC_EB_TABLE_MAX 		MAX(RELIC_EB_TABLE_BASIC, RELIC_EB_TABLE_COMBD)
+#define EB_TABLE_MAX 		MAX(EB_TABLE_BASIC, EB_TABLE_COMBD)
 #endif
 
 /*============================================================================*/
@@ -618,7 +618,7 @@ int eb_size_bin(const eb_t a, int pack);
  * @param[in] bin			- the byte vector.
  * @param[in] len			- the buffer capacity.
  * @throw ERR_NO_VALID		- if the encoded point is invalid.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void eb_read_bin(eb_t a, const uint8_t *bin, int len);
 
@@ -630,7 +630,7 @@ void eb_read_bin(eb_t a, const uint8_t *bin, int len);
  * @param[in] len			- the buffer capacity.
  * @param[in] a				- the binary elliptic curve point to write.
  * @param[in] pack			- the flag to indicate point compression.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void eb_write_bin(uint8_t *bin, int len, const eb_t a, int pack);
 

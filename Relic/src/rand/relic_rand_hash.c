@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -56,7 +56,8 @@ static void rand_hash(uint8_t *out, int out_len, uint8_t *in,
 		int in_len) {
 	uint32_t j = util_conv_big(8 * out_len);
 	int len = CEIL(out_len, MD_LEN);
-	uint8_t buf[1 + sizeof(uint32_t) + in_len], hash[MD_LEN];
+	uint8_t* buf = NULL, hash[MD_LEN];
+  RELIC_CHECKED_MALLOC(buf, uint8_t, 1 + sizeof(uint32_t) + in_len);
 
 	buf[0] = 1;
 	memcpy(buf + 1, &j, sizeof(uint32_t));
@@ -72,11 +73,12 @@ static void rand_hash(uint8_t *out, int out_len, uint8_t *in,
 		/* counter = counter + 1 */
 		buf[0]++;
 	}
+	free(buf);
 }
 
 /**
  * Accumulates a small integer in the internal state.
- *
+ * 
  * @param[in,out] state		- the internal state.
  * @param[in] digit			- the small integer.
  */
@@ -93,7 +95,7 @@ static int rand_inc(uint8_t *data, int size, int digit) {
 
 /**
  * Accumulates the hash value in the internal state.
- *
+ * 
  * @param[in,out] state		- the internal state.
  * @param[in] hash			- the hash value.
  */
@@ -184,13 +186,15 @@ void rand_seed(uint8_t *buf, int size) {
 		rand_hash(ctx->rand + 1 + len, len, ctx->rand, len + 1);
 	} else {
 		/* V = hash_df(01 || V || seed). */
-		uint8_t tmp[1 + len + size];
+		uint8_t* tmp = NULL;
+    RELIC_CHECKED_MALLOC(tmp, uint8_t, 1 + len + size);
 		tmp[0] = 1;
 		memcpy(tmp + 1, ctx->rand + 1, len);
 		memcpy(tmp + 1 + len, buf, size);
-		rand_hash(ctx->rand + 1, len, tmp, sizeof(tmp));
+		rand_hash(ctx->rand + 1, len, tmp, 1 + len + size);
 		/* C = hash_df(00 || V). */
 		rand_hash(ctx->rand + 1 + len, len, ctx->rand, len + 1);
+		free(tmp);
 	}
 	ctx->counter = ctx->seeded = 1;
 }

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -24,7 +24,7 @@
  * @file
  *
  * Implementation of the vBNN-IBS idenenty-based signature algorithm.
- *
+ * 
  * Paper: "IMBAS: Identity-based multi-user broadcast authentication in wireless sensor networks"
  *
  * @version $Id$
@@ -41,7 +41,7 @@
 
 int cp_vbnn_ibs_kgc_gen(vbnn_ibs_kgc_t kgc) {
 	int result = STS_OK;
-
+	
 	/* order of the ECC group */
 	bn_t n;
 
@@ -106,7 +106,8 @@ int cp_vbnn_ibs_kgc_extract_key(vbnn_ibs_user_t user, vbnn_ibs_kgc_t kgc, uint8_
 		/* calculate s part of the user key */
 		buffer_id_and_R_size = identity_len + ec_size_bin(user->R, 1);
 		len = buffer_id_and_R_size;
-		buffer_id_and_R = (uint8_t*)malloc(buffer_id_and_R_size);
+    RELIC_CHECKED_MALLOC(buffer_id_and_R, uint8_t, buffer_id_and_R_size);
+
 		memcpy(buffer_id_and_R, identity, identity_len);
 		ec_write_bin(buffer_id_and_R + identity_len, ec_size_bin(user->R, 1), user->R, 1);
 
@@ -170,9 +171,10 @@ int cp_vbnn_ibs_user_sign(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identity,
 		/* calculate h part of the signature */
 		buffer_id_and_message_and_R_and_Y_size = identity_len + msg_len + ec_size_bin(Y, 1) + ec_size_bin(user->R, 1);
 		len = buffer_id_and_message_and_R_and_Y_size;
-		buffer_id_and_message_and_R_and_Y = (uint8_t*)malloc(buffer_id_and_message_and_R_and_Y_size);
-		buffer_i = buffer_id_and_message_and_R_and_Y;
+    RELIC_CHECKED_MALLOC(buffer_id_and_message_and_R_and_Y, uint8_t, buffer_id_and_message_and_R_and_Y_size);
 
+		buffer_i = buffer_id_and_message_and_R_and_Y;
+		
 		memcpy(buffer_i, identity, identity_len);
 		buffer_i += identity_len;
 
@@ -220,8 +222,8 @@ int cp_vbnn_ibs_user_sign(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identity,
 int cp_vbnn_ibs_user_verify(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identity, int identity_len, uint8_t *msg, int msg_len, ec_t mpk) {
 	int result = 0;
 
-	uint8_t *buffer_hash;
-	uint8_t *buffer_i;
+	uint8_t *buffer_hash = NULL;
+	uint8_t *buffer_i = NULL;
 	int buffer_hash_size;
 	int len;
 	uint8_t hash[MD_LEN];
@@ -253,7 +255,8 @@ int cp_vbnn_ibs_user_verify(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identit
 		/* calculate c */
 		buffer_hash_size = identity_len + ec_size_bin(sig_R, 1);
 		len = buffer_hash_size;
-		buffer_hash = (uint8_t*)malloc(buffer_hash_size);
+    RELIC_CHECKED_MALLOC(buffer_hash, uint8_t, buffer_hash_size);
+
 		buffer_i = buffer_hash;
 
 		memcpy(buffer_i, identity, identity_len);
@@ -285,7 +288,7 @@ int cp_vbnn_ibs_user_verify(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identit
 		/* calculate h_verify */
 		buffer_hash_size = identity_len + msg_len + ec_size_bin(sig_R, 1) + ec_size_bin(Z, 1);
 		len = buffer_hash_size;
-		buffer_hash = (uint8_t*)malloc(buffer_hash_size);
+    RELIC_CHECKED_MALLOC(buffer_hash, uint8_t, buffer_hash_size);
 		buffer_i = buffer_hash;
 
 		memcpy(buffer_i, identity, identity_len);
@@ -323,6 +326,8 @@ int cp_vbnn_ibs_user_verify(ec_t sig_R, bn_t sig_z, bn_t sig_h, uint8_t *identit
 		bn_free(h_verify);
 		ec_free(Z);
 		ec_free(tmp);
+
+    free(buffer_hash);
 	}
 	return result;
 }

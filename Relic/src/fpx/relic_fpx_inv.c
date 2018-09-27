@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -25,6 +25,7 @@
  *
  * Implementation of inversion in extensions defined over prime fields.
  *
+ * @version $Id$
  * @ingroup fpx
  */
 
@@ -95,7 +96,8 @@ void fp2_inv_uni(fp2_t c, fp2_t a) {
 
 void fp2_inv_sim(fp2_t *c, fp2_t *a, int n) {
 	int i;
-	fp2_t u, t[n];
+	fp2_t u, *t = NULL;
+  RELIC_CHECKED_MALLOC(t, fp2_t, sizeof(fp2_t) * n);
 
 	for (i = 0; i < n; i++) {
 		fp2_null(t[i]);
@@ -132,6 +134,7 @@ void fp2_inv_sim(fp2_t *c, fp2_t *a, int n) {
 			fp2_free(t[i]);
 		}
 		fp2_free(u);
+		free(t);
 	}
 }
 
@@ -208,7 +211,8 @@ void fp3_inv(fp3_t c, fp3_t a) {
 
 void fp3_inv_sim(fp3_t * c, fp3_t * a, int n) {
 	int i;
-	fp3_t u, t[n];
+	fp3_t u, *t = NULL;
+  RELIC_CHECKED_MALLOC(t, fp3_t, sizeof(fp3_t) * n);
 
 	for (i = 0; i < n; i++) {
 		fp3_null(t[i]);
@@ -245,6 +249,7 @@ void fp3_inv_sim(fp3_t * c, fp3_t * a, int n) {
 			fp3_free(t[i]);
 		}
 		fp3_free(u);
+		free(t);
 	}
 }
 

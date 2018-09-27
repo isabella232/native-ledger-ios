@@ -33,7 +33,7 @@
 #define RELIC_CONF_H
 
 /** Project version. */
-#define RELIC_VERSION "0.4.1"
+#define VERSION "0.4.1"
 
 /** Debugging support. */
 /* #undef DEBUG */
@@ -63,7 +63,7 @@
 #define STLIB
 
 /** Number of times each test is ran. */
-#define TESTS    100
+#define TESTS    0
 /** Number of times each benchmark is ran. */
 #define BENCH    100
 
@@ -87,7 +87,7 @@
 #define WORD     64
 
 /** Byte boundary to align digit vectors. */
-#define ALIGN    1
+#define ALIGN    16
 
 /** Build multiple precision integer module. */
 #define WITH_BN
@@ -126,7 +126,7 @@
 #define ARITH    EASY
 
 /** Required precision in bits. */
-#define BN_PRECI 1024
+#define BN_PRECI 256
 /** A multiple precision integer can store w words. */
 #define SINGLE	 0
 /** A multiple precision integer can store the result of an addition. */
@@ -320,7 +320,7 @@
 /** Basic squaring. */
 #define BASIC    1
 /** Table-based squaring. */
-#define RELIC_TABLE    2
+#define TABLE    2
 /** Integrated modular squaring. */
 #define INTEG	 3
 /** Chosen binary field squaring method. */
@@ -661,7 +661,7 @@
 /** NIST HASH-DRBG generator. */
 #define HASH     1
 /** NIST HMAC-DRBG generator. */
-#define RELIC_HMAC     2
+#define HMAC     2
 /** Operating system underlying generator. */
 #define UDEV     3
 /** Intel RdRand instruction. */
@@ -701,7 +701,7 @@
 /* Arduino platform. */
 #define DUINO    6
 /** Detected operation system. */
-#define OPSYS    NONE
+#define OPSYS    MACOSX
 
 /** OpenMP multithreading support. */
 #define OPENMP   1
@@ -723,7 +723,7 @@
 /** Cycle-counting timer. */
 #define CYCLE    6
 /** Chosen timer. */
-#define TIMER    HREAL
+#define TIMER    NONE
 
 /** Prefix to identity this build of the library. */
 /* #undef LABEL */

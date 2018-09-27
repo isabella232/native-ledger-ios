@@ -1,10 +1,4 @@
-//     ___                      _           ___ 
-//    /   |  ____  ____  ____  (_)___  ___ |__ \
-//   / /| | / __ \/ __ \/ __ \/ /_  / / _ \__/ /
-//  / ___ |/ / / / /_/ / / / / / / /_/  __/ __/ 
-// /_/  |_/_/ /_/\____/_/ /_/_/ /___/\___/____/ 
-//
-// Copyright 2015 abhi shelat
+	// Copyright 2015 abhi shelat
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
 //    You may obtain a copy of the License at
@@ -15,22 +9,27 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
+
 #include "groups.h"
 
 #ifdef __IPHONE_OS_VERSION_MIN_REQUIRED
 #include "anon.h"
 #endif
 
-extern "C" {
+//extern "C" {
 #ifndef __IPHONE_OS_VERSION_MIN_REQUIRED
 #include "anon.h"
 #endif
 
 #include <fcntl.h>
+
+#if !defined _WINDOWS
 #include <unistd.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
-}
+//}
 
 #include <iostream>
 #include <fstream>
@@ -38,12 +37,12 @@ extern "C" {
 #include <iomanip>
 
 void usage(char* me);
-void rand(char* buf, int sz);
 
 using namespace std;
 
-void log(const char *msg, const char* detail) 	{ printf("%s %s\n",msg, detail); }
-void log(const char *msg, string str) 			{ printf("%s %s\n",msg, str.c_str());	 }
+void log(const char *msg, const int detail) 	{ fprintf(stderr, "%s %d\n",msg, detail); }
+void log(const char *msg, const char* detail) 	{ fprintf(stderr, "%s %s\n",msg, detail); }
+void log(const char *msg, string str) 		{ fprintf(stderr, "%s %s\n",msg, str.c_str()); }
 
 // The Okamoto signature scheme is
 //     pk: w=g^x   sk: x
@@ -51,6 +50,19 @@ void log(const char *msg, string str) 			{ printf("%s %s\n",msg, str.c_str());	 
 //
 // To verify, check that
 //     e(sigma, wg^r) = e(g, g^m1 t^m2 u v^s)
+
+
+#ifdef _WINDOWS
+char * strsep(char **sp, const char *sep) {
+  char *p, *s;
+  if (sp == NULL || *sp == NULL || **sp == '\0') return(NULL);
+  s = *sp;
+  p = s + strcspn(s, sep);
+  if (*p != '\0') *p++ = '\0';
+  *sp = p;
+  return(s);
+}
+#endif
 
 class SIG {
 public:
@@ -66,7 +78,7 @@ public:
 	int read(const char* str) {
 		istringstream v(str);
 		if (v >> sigma >> r >> s) { return 1; }
-		fprintf(stderr, "Error reading signature.\n");
+		log("SIG.read:", "failed");
 		return 0;
 	}
 };
@@ -80,9 +92,10 @@ public:
 		string s(txt);
 		istringstream in(s);
 		string t,b;
-		int a = ( (in >> t >> gg >> tt >> uu >> vv >> ww >> b) 
-				&& t == "==========ANONLOGIN_VK_BEG==========" 
+		int a = ( (in >> t >> gg >> tt >> uu >> vv >> ww >> b)
+				&& t == "==========ANONLOGIN_VK_BEG=========="
 				&& b == "===========ANONLOGIN_VK_END==========" );
+		if (!a) log("ANONVK.read:", "failed");
 		return a;
 	}
 
@@ -127,7 +140,7 @@ public:
 			cout << "left "<< lleft << endl << endl << "right " << rright << endl;
 			return 0;
 		}
-		return 1;		
+		return 1;
 	}
 };
 
@@ -139,7 +152,7 @@ public:
 
 	string str() {
 		ostringstream out;
-		out <<  "==========ANONLOGIN_SK_BEG==========" << endl 
+		out <<  "==========ANONLOGIN_SK_BEG==========" << endl
 			<< gg << endl << tt << endl << uu << endl << vv << endl << ww << endl << xx << endl <<
 			"===========ANONLOGIN_SK_END==========";
 		return out.str();
@@ -147,15 +160,19 @@ public:
 
 	int readFromFile(string filename) {
 		ifstream is(filename);
-		if (!is.is_open()) { return 0; }
+		if (!is.is_open()) {
+			log("ANONSK.readFromFile failed:", filename);
+			return 0;
+		}
 		return readkey(is);
 	}
 
 	int readkey(istream& is) {
 		string t,b;
-		int a = ( (is >> t >>  gg >> tt >> uu >> vv >> ww>> xx >> b) 
-				&& t == "==========ANONLOGIN_SK_BEG==========" 
+		int a = ( (is >> t >>  gg >> tt >> uu >> vv >> ww>> xx >> b)
+				&& t == "==========ANONLOGIN_SK_BEG=========="
 				&& b == "===========ANONLOGIN_SK_END==========" );
+		if (!a) log("ANONSK.readkey:", "failed");
 		return a;
 	}
 
@@ -207,20 +224,20 @@ public:
 	G1 alpha;
 
 	Cred() { zero(alpha); }
-	
+
 	Cred(const char* usrid) {
 		userid = string(usrid);
 		int len = strlen(usrid);
 		set_int(id, usrid, len);
 		rand_int(sid);
-		rand_int(sig.s);	
+		rand_int(sig.s);
 
 		zero(alpha);
 	}
 
 	string str() {
 		ostringstream out;
-		out << "==========ANONLOGIN_CRED_BEG==========" << endl 
+		out << "==========ANONLOGIN_CRED_BEG==========" << endl
 			 << userid << endl << sid << endl <<
 			 sig.sigma << endl << sig.r << endl << sig.s << endl <<
 			"===========ANONLOGIN_CRED_END==========";
@@ -234,15 +251,21 @@ public:
 
 	int read(istream& is) {
 		string t,b;
-		if (!(is >> t)) { return 0; }
+		if (!(is >> t)) {
+			log("Cred.read:", "failed");
+                	return 0;
+                }
 		std::getline(is, userid);	// consume newline from topline
 		std::getline(is, userid);	// read userid entirely
 		int len = userid.length();
-		if (len>31) { return 0; }	// fail on long address
+		if (len>31) {			// fail on long address
+			log("Cred.read: len", len);
+			return 0;
+		}
 		set_int(id, userid.c_str(), len);
 
 		return ( (is >> sid >> sig.sigma >> sig.r >> sig.s >> b)
-			 && t=="==========ANONLOGIN_CRED_BEG==========" 
+			 && t=="==========ANONLOGIN_CRED_BEG=========="
 			 && b=="===========ANONLOGIN_CRED_END==========" );
 
 	}
@@ -291,7 +314,7 @@ int makeKey(char vk[2048], char sk[2048])
 	std::copy(v.begin(), v.end(), vk);
 	vk[v.size()] = '\0'; // terminating 0
 	std::copy(s.begin(), s.end(), sk);
-	sk[s.size()] = '\0'; 
+	sk[s.size()] = '\0';
 
 	return 1;
 }
@@ -319,7 +342,7 @@ public:
 	Big z1,z2, i1, i2;
 
 	REGZKMSG() {
-		rand_int(b1); rand_int(b2); 
+		rand_int(b1); rand_int(b2);
 		zero(z1); zero(z2); zero(i1); zero(i2); zero(challenge); zero(gamma);
 	}
 
@@ -329,8 +352,8 @@ public:
 		return out.str();
 	}
 
-	friend istream &operator>>( istream &input,  REGZKMSG& zk ) { 
-		input >> zk.gamma >> zk.challenge >> zk.z1 >> zk.z2; 
+	friend istream &operator>>( istream &input,  REGZKMSG& zk ) {
+		input >> zk.gamma >> zk.challenge >> zk.z1 >> zk.z2;
 		return input;
 	}
 
@@ -370,7 +393,7 @@ public:
 			log(" Left proof != right proof in server response.\n", "");
 			cout << "alpha " << alpha << endl << "gamma " << gamma << endl << "z1: " << z1 << endl << "z2: " << z2 << endl;
 			cout << "left "<< lleft << endl << endl << "right " << rright << endl;
-			return 0;		
+			return 0;
 		}
 
 		return 1;
@@ -572,7 +595,7 @@ const char* registerUserFinal(const char* userid, const char* servermsg, const c
 	}
 
 	if (!ravk.verifySignature(c.userid, c.sid, c.sig, p)) {
-		log("Invalid signature in registerUserFinal",c.userid); 
+		log("Invalid signature in registerUserFinal",c.userid);
 		return NULL;
 	}
 
@@ -588,7 +611,7 @@ const char* registerUserFinal(const char* userid, const char* servermsg, const c
 // emails is a "\n" and/or " "-delimmitted string of email addresses.
 // simplified calling this function from golang
 // the output sig list contains <name>, <sig>
-// the comma is used to delimit in case the name has spaces in it. 
+// the comma is used to delimit in case the name has spaces in it.
 // thus, name cannot have a , in it. We assume names are comma-free email addresses
 
 // returns 1 on success, 0 on error
@@ -621,7 +644,7 @@ int createSurvey(survey* s) {
 
 
 
-// public version of this method to extend a survey with new 
+// public version of this method to extend a survey with new
 // participants.
 // returns -1 on error
 int extendSurvey(const char* emails, survey *s) {
@@ -710,12 +733,12 @@ public:
 	G1  j1,j2;
 
 	ZKMSG() {
-		rand_int(d);  rand_int(hd); rand_int(b1); 
+		rand_int(d);  rand_int(hd); rand_int(b1);
 		rand_int(b2); rand_int(b3); rand_int(b4);
 		rand_int(b5); rand_int(b6); rand_int(b7);
-		rand_int(b8); rand_int(b9); rand_int(b10); 
+		rand_int(b8); rand_int(b9); rand_int(b10);
 		rand_int(b11);rand_int(b12);rand_int(b13);
-		rand_int(b14); 
+		rand_int(b14);
 		rand_int(y), rand_int(yp); rand_int(ypp);
 		rand_int(e1); rand_int(e2);
 	}
@@ -723,28 +746,28 @@ public:
 	string str() {
 		ostringstream out;
 		out << B << endl << hB << endl << D << endl << F << endl << this->H << endl <<
-			alpha << endl << beta << endl << 
+			alpha << endl << beta << endl <<
 			E1 << endl << E2 << endl <<
 			delta << endl << gamma << endl << gamma2 << endl << eta << endl <<
 			chal << endl <<
 			z1 << " " << z2 << " " << z3 << " " << z4 << " " <<
-			z5 << " " << z6 << " " << z7 << " " << z8 << " " << 
+			z5 << " " << z6 << " " << z7 << " " << z8 << " " <<
 			z9 << " " << z10 << " " << z11 << " " << z12 << " " <<
 			z13 << " " << z14 <<
 			endl <<
-			j1 << endl << 
+			j1 << endl <<
 			j2 << endl;
 		return out.str();
 	}
 
-	friend istream &operator>>( istream &input,  ZKMSG& zk ) { 
+	friend istream &operator>>( istream &input,  ZKMSG& zk ) {
 		input >> zk.B >> zk.hB >> zk.D >> zk.F >> zk.H >>
 			zk.alpha >> zk.beta >>
-			zk.E1 >> zk.E2 >> 
-			zk.delta >> zk.gamma >> zk.gamma2 >> zk.eta >> 
+			zk.E1 >> zk.E2 >>
+			zk.delta >> zk.gamma >> zk.gamma2 >> zk.eta >>
 			zk.chal >>
-			zk.z1 >> zk.z2 >> zk.z3 >> zk.z4 >> 
-			zk.z5 >> zk.z6 >> zk.z7 >> zk.z8 >> 
+			zk.z1 >> zk.z2 >> zk.z3 >> zk.z4 >>
+			zk.z5 >> zk.z6 >> zk.z7 >> zk.z8 >>
 			zk.z9 >> zk.z10 >> zk.z11 >> zk.z12 >>
 			zk.z13 >> zk.z14 >>
 			zk.j1 >> zk.j2;
@@ -752,9 +775,9 @@ public:
 	}
 
 	void computeFirstProofMessage(SIG& sig, ANONVK& ravk, G1& C, G1& Hvid, Big& vid, Big& id, SIG& sigvid, ANONVK& vavk) {
-        
+
 		mult(J1, p.gg1, e1);		// J1 <- g^e {random grp element}
-		mult(J2, p.gg1, e2);		
+		mult(J2, p.gg1, e2);
 
 		// B  <- (wg^r)^d
 		mult(B, p.gg2, sig.r);
@@ -778,7 +801,7 @@ public:
 		mult(t1, ravk.uu, y);
 		add(D,D,t1);
 
-		// F <-- D^id t^yp 
+		// F <-- D^id t^yp
 		mult(F, D, id);
 		mult(t1, ravk.tt, yp);
 		add(F,F,t1);
@@ -799,7 +822,7 @@ public:
 		mult(aa2, p.gg2, b7);
 		add(alpha, alpha, aa2);
 
-		// beta  <- C^{b1} H_vid^{-b4} 
+		// beta  <- C^{b1} H_vid^{-b4}
         mult(beta, C, b1);
         Big ib4;
         inverse(ib4, b4);
@@ -865,12 +888,12 @@ public:
 
 		atepair(ttf, p.gg2, t1);
 		mult(E2, tte, ttf);
-        
+
 	}
 
 
 	void computeThirdProofMessage(Big& id, Big& sid, SIG& sig, SIG& sigvid, ANONVK& ravk, Big& cc) {
-		
+
 		eval(z1, cc, d, b1);		// z1 = b1 + c(d)
 
 		mult(i2, sig.r, d);			// z2 = b2 + c(r  * d)
@@ -878,7 +901,7 @@ public:
 
 		mult(i3, id, d);			// z3 = b3 + c(id * d)
 		eval(z3, cc, i3, b3);
-		
+
 		mult(i4, sid, d);			// z4 = b4 + c(sid * d)
 		eval(z4, cc, i4, b4);
 
@@ -967,10 +990,10 @@ public:
 		mult(r2, p.gg2, z7);
 		add(r1, r1, r2);
 
-        // 1 = beta * C^-z1 * H(vid)^z4 
-        G1 Hvid, r3, l3, t3;
+        // 1 = beta * C^-z1 * H(vid)^z4
+        G1 Hvid, r3, l3;
         H1(vidstr, Hvid);
-        
+
         mult(r3, Hvid, z4);
         //Big iz1;
         //inverse(iz1, z1);
@@ -978,15 +1001,15 @@ public:
         //add(r3, r3, t3);
         add(r3, r3, beta);
         normalize(r3, r3);
-        
+
         mult(l3, C, z1);
         normalize(l3,l3);
 
-        
+
 		// E1 = e(j1, B)^{-1} * e(g2, g^z3 t^z4 u^z1 v^z5)
 		GT r1a, r1b, E1r, ttt;
 		G1 rt1, gz3, tz4, uz1, vz5;
-        
+
 		atepair(ttt, B, j1);
 		pow(r1a, ttt, p.minus_one);
 
@@ -1052,7 +1075,7 @@ public:
 		normalize(r5,r5);
 
 		// gamma2 F^c = g^z3 hg^z8 u^{z13} t^{z12}
-		G1 r7, t7;
+		G1 r7;
 		mult(r7, ravk.gg, z3);
 		add(r7,r7,t5);	// add tt^z12 since it is precomputed
 		mult(t5, vavk.gg, z8);
@@ -1162,16 +1185,16 @@ const char* OnlineExtractableNIZK(const char* msg, Cred& cred, ANONVK& ravk, G1&
 	//printf(" first msg: %lld  %lld/per\n", microseconds, microseconds/NUMZK);
 	// int iter = 0;
 	// long long msec = 0;
-    
+
 	for(int i=0; i<NUMZK; i++) {
 		Big ccc;
 		rand_int(ccc);
 		sha256_ctx cci;
 		unsigned char hval[SHA256_DIGEST_SIZE];
 		int cnt = 0;
-        
+
 		zk[i].computeThirdProofMessage(cred.id, cred.sid, cred.sig, sigvid, ravk, ccc);
-        
+
 		do {
 			inc(ccc);
 			zk[i].updateThirdProofMessage(cred.sig, sigvid, cred.id);
@@ -1189,7 +1212,7 @@ const char* OnlineExtractableNIZK(const char* msg, Cred& cred, ANONVK& ravk, G1&
 
 	ostringstream out;
 	out << msg << endl << C << endl;
-    
+
 	for(int i=0; i<NUMZK; i++) {
 		out << zk[i].str() << endl;
 	}
@@ -1208,9 +1231,9 @@ const char* submitMessage(const char* msg, const char* cred, const char* ravk_st
 		log("Invalid input.", "");
 		return NULL;
 	}
-	
-	if (!ravk.read(ravk_str) || !c.read(cred)) { 
-		log("Could not read ravk or cred.",""); 
+
+	if (!ravk.read(ravk_str) || !c.read(cred)) {
+		log("Could not read ravk or cred.","");
 		return NULL;
 	}
 
@@ -1220,11 +1243,11 @@ const char* submitMessage(const char* msg, const char* cred, const char* ravk_st
 	}
 
 	// Parse vid-sig if necessary
-	bool clause = false;
+/*	bool clause = false; */
 	SIG sigvid;
 	Big vid;
 	if (uidsig!=NULL && vavk_str!=NULL) {
-		clause = true;
+/*		clause = true; */
 		istringstream in(vidstr);
 
 		if (!vavk.read(vavk_str) || !sigvid.read(uidsig) || !(in >> vid) ||
@@ -1232,7 +1255,7 @@ const char* submitMessage(const char* msg, const char* cred, const char* ravk_st
 			)
 		{
 			log("Could not verify vavk or signature.\n", uidsig);
-			return NULL;			
+			return NULL;
 		}
 	}
 
@@ -1240,7 +1263,7 @@ const char* submitMessage(const char* msg, const char* cred, const char* ravk_st
 	G1 Hvid, C;
 	H1(vidstr, Hvid);
 	mult(C, Hvid, c.sid);
-    
+
 	return OnlineExtractableNIZK(msg, c, ravk, C, Hvid, vid, sigvid, vavk, p);
 }
 
@@ -1250,17 +1273,17 @@ const char* submitMessage(const char* msg, const char* cred, const char* ravk_st
 int verifyMessage(const char* proof, const char* ravk_str, const char* vidstr, const char* vavk_str, survey_response* sr) {
 
 	ANONVK ravk, vavk;
-	bool clause = false;
-    
+/*	bool clause = false; */
+
 	if (!proof || !ravk_str || !sr || !ravk.read(ravk_str)) {
 		log("Invalid proof inputs","");
 		return 0;
 	}
 	if (vidstr && !vavk.read(vavk_str)) {
 		log("Invalid vavk inputs",vidstr);
-		return 0;		
-	} else { clause = true; }
-    
+		return 0;
+	} else { /* clause = true; */ }
+
 	sr->msg = sr->token = NULL;
 
 	istringstream in(proof);
@@ -1287,9 +1310,9 @@ int verifyMessage(const char* proof, const char* ravk_str, const char* vidstr, c
 		return 0;
 	}
 
-	// if (!equal(vvid, vvidin)) { 
-	// 	log("vvid and vvidin are not the same",""); 
-	// 	return 0; 
+	// if (!equal(vvid, vvidin)) {
+	// 	log("vvid and vvidin are not the same","");
+	// 	return 0;
 	// }
 
 	// 4. Check all NIZK
@@ -1341,7 +1364,3 @@ void initAnonize() {
 		log("Cannot initialize math libraries. Exiting.","");
 	}
 }
-
-
-
-

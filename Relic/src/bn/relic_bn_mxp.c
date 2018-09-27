@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -37,7 +37,7 @@
 /**
  * Size of precomputation table.
  */
-#define RELIC_TABLE_SIZE			64
+#define TABLE_SIZE			64
 
 /*============================================================================*/
 /* Public definitions                                                         */
@@ -105,15 +105,15 @@ void bn_mxp_basic(bn_t c, const bn_t a, const bn_t b, const bn_t m) {
 #if BN_MXP == SLIDE || !defined(STRIP)
 
 void bn_mxp_slide(bn_t c, const bn_t a, const bn_t b, const bn_t m) {
-	bn_t tab[RELIC_TABLE_SIZE], t, u, r;
+	bn_t tab[TABLE_SIZE], t, u, r;
 	int i, j, l, w = 1;
-	uint8_t win[RELIC_BN_BITS];
+	uint8_t win[BN_BITS];
 
 	bn_null(t);
 	bn_null(u);
 	bn_null(r);
 	/* Initialize table. */
-	for (i = 0; i < RELIC_TABLE_SIZE; i++) {
+	for (i = 0; i < TABLE_SIZE; i++) {
 		bn_null(tab[i]);
 	}
 
@@ -160,7 +160,7 @@ void bn_mxp_slide(bn_t c, const bn_t a, const bn_t b, const bn_t m) {
 			bn_mod(tab[2 * i + 1], tab[2 * i + 1], m, u);
 		}
 
-		l = RELIC_BN_BITS + 1;
+		l = BN_BITS + 1;
 		bn_rec_slw(win, &l, b, w);
 		for (i = 0; i < l; i++) {
 			if (win[i] == 0) {
@@ -240,7 +240,7 @@ void bn_mxp_monty(bn_t c, const bn_t a, const bn_t b, const bn_t m) {
 			mask = -(j ^ 1);
 			t = (tab[0]->used ^ tab[1]->used) & mask;
 			tab[0]->used ^= t;
-			tab[1]->used ^= t;
+			tab[1]->used ^= t;			
 		}
 
 #if BN_MOD == MONTY

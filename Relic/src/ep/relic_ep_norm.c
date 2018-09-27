@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -25,6 +25,7 @@
  *
  * Implementation of the point normalization on prime elliptic curves.
  *
+ * @version $Id$
  * @ingroup ep
  */
 
@@ -101,7 +102,8 @@ void ep_norm(ep_t r, const ep_t p) {
 
 void ep_norm_sim(ep_t *r, const ep_t *t, int n) {
 	int i;
-	fp_t a[n];
+	fp_t* a = NULL;
+  RELIC_CHECKED_MALLOC(a, fp_t, sizeof(fp_t) * n);
 
 	for (i = 0; i < n; i++) {
 		fp_null(a[i]);
@@ -132,5 +134,6 @@ void ep_norm_sim(ep_t *r, const ep_t *t, int n) {
 		for (i = 0; i < n; i++) {
 			fp_free(a[i]);
 		}
+		free(a);
 	}
 }

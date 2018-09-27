@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -75,6 +75,7 @@ int cp_ibe_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len,
 	g1_t p;
 	g2_t q;
 	gt_t e;
+	uint8_t* buf = NULL;
 
 	bn_null(n);
 	bn_null(r);
@@ -108,20 +109,20 @@ int cp_ibe_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len,
 
 		/* Allocate size for storing the output. */
 		l = gt_size_bin(e, 0);
-		uint8_t buf[l];
+    RELIC_CHECKED_MALLOC(buf, uint8_t, l);
 
 		/* h = H_2(e^r). */
-		bn_rand_mod(r, n);
+		bn_rand_mod(r, n);		
 		gt_exp(e, e, r);
-		gt_write_bin(buf, sizeof(buf), e, 0);
-		md_map(h, buf, l);
+		gt_write_bin(buf, l, e, 0); 
+		md_map(h, buf, l);  
 
 		/* P = kG. */
 		g1_mul_gen(p, r);
 		g1_write_bin(out, *out_len, p, 0);
 
 		for (l = 0; l < MIN(in_len, MD_LEN); l++) {
-			out[l + (2 * FP_BYTES + 1)] = in[l] ^ h[l];
+			out[l + (2 * FP_BYTES + 1)] = in[l] ^ h[l];			
 		}
 
 		*out_len = in_len + (2 * FP_BYTES + 1);
@@ -133,6 +134,7 @@ int cp_ibe_enc(uint8_t *out, int *out_len, uint8_t *in, int in_len,
 		g1_free(p);
 		g2_free(q);
 		gt_free(e);
+		free(buf);
 	}
 	return result;
 }
@@ -142,6 +144,7 @@ int cp_ibe_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len, g2_t prv) {
 	uint8_t h[MD_LEN];
 	g1_t p;
 	gt_t e;
+	uint8_t *buf = NULL;
 
 	g1_null(p);
 	gt_null(e);
@@ -165,12 +168,12 @@ int cp_ibe_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len, g2_t prv) {
 		l = gt_size_bin(e, 0);
 
 		/* Allocate size for storing the output. */
-		uint8_t buf[l];
-		gt_write_bin(buf, sizeof(buf), e, 0);
+    RELIC_CHECKED_MALLOC(buf, uint8_t, l);
+		gt_write_bin(buf, l, e, 0);
 		md_map(h, buf, l);
 
 		for (l = 0; l < MIN(in_len, MD_LEN); l++) {
-			out[l] = in[l + (2 * FP_BYTES + 1)] ^ h[l];
+			out[l] = in[l + (2 * FP_BYTES + 1)] ^ h[l];			
 		}
 
 		*out_len = in_len - (2 * FP_BYTES + 1);
@@ -179,6 +182,7 @@ int cp_ibe_dec(uint8_t *out, int *out_len, uint8_t *in, int in_len, g2_t prv) {
 	} FINALLY {
 		g1_free(p);
 		gt_free(e);
+		free(buf);
 	}
 
 	return result;

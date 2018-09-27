@@ -82,12 +82,12 @@
 /**
  * Represents a G_1 precomputable table.
  */
-#define RELIC_G1_TABLE			CAT(CAT(RELIC_, G1_UPPER), _TABLE_MAX)
+#define G1_TABLE			CAT(G1_UPPER, _TABLE_MAX)
 
 /**
  * Represents a G_2 precomputable table.
  */
-#define RELIC_G2_TABLE			CAT(CAT(RELIC_, G2_UPPER), _TABLE_MAX)
+#define G2_TABLE			CAT(G2_UPPER, _TABLE_MAX)
 
 /*============================================================================*/
 /* Type definitions                                                           */
@@ -273,10 +273,10 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Tests if a G_T element is the unity.
  *
- * @param[in] A				- the element to test.
+ * @param[in] P				- the element to test.
  * @return 1 if the element it the unity, 0 otherwise.
  */
-#define gt_is_unity(A)		(CAT(GT_LOWER, cmp_dig)(A, 1) == CMP_EQ)
+#define gt_is_unity(P)		(CAT(GT_LOWER, cmp_dig)(P, 1) == CMP_EQ)
 
 /**
  * Assigns a G_1 element to the unity.
@@ -295,16 +295,16 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Assigns a G_T element to zero.
  *
- * @param[out] A			- the element to assign.
+ * @param[out] P			- the element to assign.
  */
-#define gt_zero(A)			CAT(GT_LOWER, zero)(A)
+#define gt_zero(P)			CAT(GT_LOWER, zero)(P)
 
 /**
  * Assigns a G_T element to the unity.
  *
- * @param[out] A			- the element to assign.
+ * @param[out] P			- the element to assign.
  */
-#define gt_set_unity(A)		CAT(GT_LOWER, set_dig)(A, 1)
+#define gt_set_unity(P)		CAT(GT_LOWER, set_dig)(P, 1)
 
 /**
  * Copies the second argument to the first argument.
@@ -325,10 +325,10 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Copies the second argument to the first argument.
  *
- * @param[out] C			- the result.
- * @param[in] A				- the element to copy.
+ * @param[out] R			- the result.
+ * @param[in] P				- the element to copy.
  */
-#define gt_copy(C, A)		CAT(GT_LOWER, copy)(C, A)
+#define gt_copy(R, P)		CAT(GT_LOWER, copy)(R, P)
 
 /**
  * Compares two elements from G_1.
@@ -351,20 +351,20 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Compares two elements from G_T.
  *
- * @param[in] A				- the first element.
- * @param[in] B				- the second element.
- * @return CMP_EQ if A == B and CMP_NE if P != Q.
+ * @param[in] P				- the first element.
+ * @param[in] Q				- the second element.
+ * @return CMP_EQ if P == Q and CMP_NE if P != Q.
  */
-#define gt_cmp(A, B)		CAT(GT_LOWER, cmp)(A, B)
+#define gt_cmp(P, Q)		CAT(GT_LOWER, cmp)(P, Q)
 
 /**
  * Compares a G_T element with a digit.
  *
- * @param[in] A				- the G_T element.
+ * @param[in] P				- the G_T element.
  * @param[in] D				- the digit.
- * @return CMP_EQ if A == D and CMP_NE if A != D.
+ * @return CMP_EQ if P == D and CMP_NE if P != D.
  */
-#define gt_cmp_dig(A, D)	CAT(GT_LOWER, cmp_dig)(A, D)
+#define gt_cmp_dig(P, D)	CAT(GT_LOWER, cmp_dig)(P, D)
 
 /**
  * Assigns a random value to a G_1 element.
@@ -411,9 +411,9 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Prints a G_T element.
  *
- * @param[in] A				- the element to print.
+ * @param[in] P				- the element to print.
  */
-#define gt_print(A)			CAT(GT_LOWER, print)(A)
+#define gt_print(P)			CAT(GT_LOWER, print)(P)
 
 /**
  * Returns the number of bytes necessary to store a G_1 element.
@@ -434,10 +434,10 @@ typedef CAT(GT_LOWER, t) gt_t;
 /**
  * Returns the number of bytes necessary to store a G_T element.
  *
- * @param[in] A				- the element of G_T.
+ * @param[in] P				- the element of G_T.
  * @param[in] C 			- the flag to indicate compression.
  */
-#define gt_size_bin(A, C)	CAT(GT_LOWER, size_bin)(A, C)
+#define gt_size_bin(P, C)	CAT(GT_LOWER, size_bin)(P, C)
 
 /**
  * Reads a G_1 element from a byte vector in big-endian format.
@@ -445,7 +445,7 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[out] P			- the result.
  * @param[in] B				- the byte vector.
  * @param[in] L				- the buffer capacity.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient. 
  */
 #define g1_read_bin(P, B, L) 	CAT(G1_LOWER, read_bin)(P, B, L)
 
@@ -455,19 +455,19 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[out] P			- the result.
  * @param[in] B				- the byte vector.
  * @param[in] L				- the buffer capacity.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient. 
  */
 #define g2_read_bin(P, B, L) 	CAT(G2_LOWER, read_bin)(P, B, L)
 
 /**
  * Reads a G_T element from a byte vector in big-endian format.
  *
- * @param[out] A			- the result.
+ * @param[out] P			- the result.
  * @param[in] B				- the byte vector.
  * @param[in] L				- the buffer capacity.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient. 
  */
-#define gt_read_bin(A, B, L) 	CAT(GT_LOWER, read_bin)(A, B, L)
+#define gt_read_bin(P, B, L) 	CAT(GT_LOWER, read_bin)(P, B, L)	
 
 /**
  * Writes an optionally compressed G_1 element to a byte vector in big-endian
@@ -499,11 +499,11 @@ typedef CAT(GT_LOWER, t) gt_t;
  *
  * @param[out] B			- the byte vector.
  * @param[in] L				- the buffer capacity.
- * @param[in] A				- the G_T element to write.
+ * @param[in] P				- the G_T element to write.
  * @param[in] C 			- the flag to indicate point compression.
  * @throw ERR_NO_BUFFER		- if the buffer capacity is not sufficient.
  */
-#define gt_write_bin(B, L, A, C)	CAT(GT_LOWER, write_bin)(B, L, A, C)
+#define gt_write_bin(B, L, P, C)	CAT(GT_LOWER, write_bin)(B, L, P, C)
 
 /**
  * Negates a element from G_1. Computes R = -P.
@@ -522,12 +522,12 @@ typedef CAT(GT_LOWER, t) gt_t;
 #define g2_neg(R, P)		CAT(G2_LOWER, neg)(R, P)
 
 /**
- * Inverts a element from G_T. Computes C = 1/A.
+ * Inverts a element from G_T. Computes R = P^{-1}.
  *
- * @param[out] C			- the result.
- * @param[in] A				- the element to invert.
+ * @param[out] R			- the result.
+ * @param[in] P				- the element to negate.
  */
-#define gt_inv(C, A)		CAT(GT_LOWER, inv_uni)(C, A)
+#define gt_inv(R, P)		CAT(GT_LOWER, inv)(R, P)
 
 /**
  * Adds two elliptic elements from G_1. Computes R = P + Q.
@@ -548,13 +548,13 @@ typedef CAT(GT_LOWER, t) gt_t;
 #define g2_add(R, P, Q)		CAT(G2_LOWER, add)(R, P, Q)
 
 /**
- * Multiplies two elliptic elements from G_T. Computes C = A * B.
+ * Multiplies two elliptic elements from G_T. Computes R = P * Q.
  *
- * @param[out] C			- the result.
- * @param[in] A				- the first element to multiply.
- * @param[in] B				- the second element to multiply.
+ * @param[out] R			- the result.
+ * @param[in] P				- the first element to multiply.
+ * @param[in] Q				- the second element to multiply.
  */
-#define gt_mul(C, A, B)		CAT(GT_LOWER, mul)(C, A, B)
+#define gt_mul(R, P, Q)		CAT(GT_LOWER, mul)(R, P, Q)
 
 /**
  * Subtracts a G_1 element from another. Computes R = P - Q.
@@ -591,12 +591,12 @@ typedef CAT(GT_LOWER, t) gt_t;
 #define g2_dbl(R, P)		CAT(G2_LOWER, dbl)(R, P)
 
 /**
- * Squares a G_T element. Computes C = A^2.
+ * Squares a G_T element. Computes R = P^2.
  *
- * @param[out] C			- the result.
- * @param[in] A				- the element to square.
+ * @param[out] R			- the result.
+ * @param[in] P				- the element to square.
  */
-#define gt_sqr(C, A)		CAT(GT_LOWER, sqr)(C, A)
+#define gt_sqr(R, P)		CAT(GT_LOWER, sqr)(R, P)
 
 /**
  * Normalizes an element of G_1.
@@ -649,6 +649,15 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[in] K				- the small integer.
  */
 #define g2_mul_dig(R, P, K)		CAT(G2_LOWER, mul_dig)(R, P, K)
+
+/**
+ * Powers an element from G_T. Computes R = kP.
+ *
+ * @param[out] R			- the result.
+ * @param[in] P				- the element to exponentiate.
+ * @param[in] K				- the integer.
+ */
+#define gt_exp(R, P, K)		CAT(GT_LOWER, exp)(R, P, K)
 
 /**
  * Multiplies the generator of G_1 by an integer.
@@ -773,24 +782,9 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[in] Q				- the second element.
  */
 #if FP_PRIME < 1536
-#define pc_map(R, P, Q);		CAT(PC_LOWER, map_k12)(R, P, Q)
+#define pc_map(R, P, Q);	CAT(PC_LOWER, map_k12)(R, P, Q)
 #else
-#define pc_map(R, P, Q);		CAT(PC_LOWER, map_k2)(R, P, Q)
-#endif
-
-/**
- * Computes the multi-pairing of G_1 elements and G_2 elements. Computes
- * R = \prod e(P_i, Q_i).
- *
- * @param[out] R			- the result.
- * @param[in] P				- the first pairing arguments.
- * @param[in] Q				- the second pairing arguments.
- * @param[in] M 			- the number of pairing arguments.
- */
-#if FP_PRIME < 1536
-#define pc_map_sim(R, P, Q, M);	CAT(PC_LOWER, map_sim_k12)(R, P, Q, M)
-#else
-#define pc_map_sim(R, P, Q, M);	CAT(PC_LOWER, map_sim_k2)(R, P, Q, M)
+#define pc_map(R, P, Q);	CAT(PC_LOWER, map_k2)(R, P, Q)
 #endif
 
 /**
@@ -800,9 +794,9 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[in] A				- the field element to exponentiate.
  */
 #if FP_PRIME < 1536
-#define pc_exp(C, A);			CAT(PC_LOWER, exp_k12)(C, A)
+#define pc_exp(C, A);		CAT(PC_LOWER, exp_k12)(C, A)
 #else
-#define pc_exp(C, A);			CAT(PC_LOWER, exp_k2)(C, A)
+#define pc_exp(C, A);		CAT(PC_LOWER, exp_k2)(C, A)
 #endif
 
 /*============================================================================*/
@@ -815,15 +809,6 @@ typedef CAT(GT_LOWER, t) gt_t;
  * @param[out] a			- the element to assign.
  */
 void gt_rand(gt_t a);
-
-/**
- * Powers an element from G_T.
- *
- * @param[out] c			- the result.
- * @param[in] a				- the element to exponentiate.
- * @param[in] b				- the integer exponent.
- */
-void gt_exp(gt_t c, gt_t a, bn_t b);
 
  /**
   * Returns the generator of the group G_T.

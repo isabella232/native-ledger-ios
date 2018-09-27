@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -86,57 +86,6 @@
 /** @} */
 #endif
 
-#if defined(EP_ENDOM) && FP_PRIME == 381
-/**
- * Parameters for a pairing-friendly prime curve over a quadratic extension.
- */
-/** @{ */
-#define B12_P381_A0		"0"
-#define B12_P381_A1		"0"
-#define B12_P381_B0		"4"
-#define B12_P381_B1		"4"
-#define B12_P381_X0		"024AA2B2F08F0A91260805272DC51051C6E47AD4FA403B02B4510B647AE3D1770BAC0326A805BBEFD48056C8C121BDB8"
-#define B12_P381_X1		"13E02B6052719F607DACD3A088274F65596BD0D09920B61AB5DA61BBDC7F5049334CF11213945D57E5AC7D055D042B7E"
-#define B12_P381_Y0		"0CE5D527727D6E118CC9CDC6DA2E351AADFD9BAA8CBDD3A76D429A695160D12C923AC9CC3BACA289E193548608B82801"
-#define B12_P381_Y1		"0606C4A02EA734CC32ACD2B02BC28B99CB3E287E85A763AF267492AB572E99AB3F370D275CEC1DA1AAA9075FF05F79BE"
-#define B12_P381_R		"73EDA753299D7D483339D80809A1D80553BDA402FFFE5BFEFFFFFFFF00000001"
-/** @} */
-#endif
-
-#if defined(EP_ENDOM) && FP_PRIME == 382
-/**
- * Parameters for a pairing-friendly prime curve over a quadratic extension.
- */
-/** @{ */
-#define BN_P382_A0		"0"
-#define BN_P382_A1		"0"
-#define BN_P382_B0		"1"
-#define BN_P382_B1		"24009015183F94892D996CC179C6D1666F82CEFBE47879BBA6E58DBE43002A0609480097801382BE004E000000000012"
-#define BN_P382_X0		"124D78021D2F75CC7C4CA67A4A0E97BB67A89C66B61C2C06600760B0D7531624F2DD78AEF890A5FC0EB7F8C6FD6FC24C"
-#define BN_P382_X1		"0DD2BB64502028D5DED81EAC950BF96D0140DBA681B99152F14A0AC190AC93E4A7EA979A355367B30D23B6E8CAD6F394"
-#define BN_P382_Y0		"16C2749A07848E85C9E128D710796AE465DBD5DDC7B285FA02777E378E9FFF0A42E2128C3167B231602B72553DF79669"
-#define BN_P382_Y1		"09CAC2932F3C894CCE129ECBB49AFD4BFF94C10B5DF37AB469E3455F16EFDD304721F689BFF864A92ACB3F4DF52678ED"
-#define BN_P382_R		"24009015183F94892D996CC179C6D1666F82CEFBE47879BB46E4CDA2E2E2281D08DC008E80108252004200000000000D"
-/** @} */
-#endif
-
-#if defined(EP_ENDOM) && FP_PRIME == 455
-/**
- * Parameters for a pairing-friendly prime curve over a quadratic extension.
- */
-/** @{ */
-#define B12_P455_A0		"0"
-#define B12_P455_A1		"0"
-#define B12_P455_B0		"5"
-#define B12_P455_B1		"55555955557955572AA00E0F95B49203003F665E3A5B1D56234BD93954FCB314B8B3DB9994ACE86D1BA6C589556B2AA956AAA00001800002A6"
-#define B12_P455_X0		"2EEC192F28D9F29B538E089E5A05014765EAC5E066D4A3083D247C009EE309392AA2D813C9FC798CB292D0655CD9F559C961B6F678109C5676"
-#define B12_P455_X1		"26DD95EE22842C030FEB5D46259492EA7E051D604608D35F8F5AFB65B0FC18DADBC079D037D5F9E24634346181876FC2F9D501E9A060ED726D"
-#define B12_P455_Y0		"29C445A3809D96184EB3E76193ABBE3688B68B4123ABCC9F31A81F42D2420B1B4D653673CEAC2A0543347EE3B1A56591F3496626F8763EEADB"
-#define B12_P455_Y1		"24AC244C6F31FDAC1214CA62AB4DB7BA9B5F0D54D56A3D5C680044225C3AAF9815C272A15AA1D28FB6AC9EB7B0BE6916450794A617AFFB4EF9"
-#define B12_P455_R		"10000080000380002E0000F10004F00025E000750001D1000A00000400001C00007FFFFC00001"
-/** @} */
-#endif
-
 #if defined(EP_ENDOM) && FP_PRIME == 638
 /**
  * Parameters for a pairing-friendly prime curve over a quadratic extension.
@@ -204,7 +153,7 @@ void ep2_curve_init(void) {
 	ctx_t *ctx = core_get();
 
 #ifdef EP_PRECO
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		ctx->ep2_ptr[i] = &(ctx->ep2_pre[i]);
 	}
 #endif
@@ -220,13 +169,13 @@ void ep2_curve_init(void) {
 
 #ifdef EP_PRECO
 #if ALLOC == STATIC || ALLOC == DYNAMIC
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		fp2_new(ctx->ep2_pre[i].x);
 		fp2_new(ctx->ep2_pre[i].y);
 		fp2_new(ctx->ep2_pre[i].z);
 	}
 #elif ALLOC == STACK
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		ctx->ep2_pre[i].x[0] = ctx->_ep2_pre[3 * i][0];
 		ctx->ep2_pre[i].x[1] = ctx->_ep2_pre[3 * i][1];
 		ctx->ep2_pre[i].y[0] = ctx->_ep2_pre[3 * i + 1][0];
@@ -244,7 +193,7 @@ void ep2_curve_init(void) {
 void ep2_curve_clean(void) {
 	ctx_t *ctx = core_get();
 #ifdef EP_PRECO
-	for (int i = 0; i < RELIC_EP_TABLE; i++) {
+	for (int i = 0; i < EP_TABLE; i++) {
 		fp2_free(ctx->ep2_pre[i].x);
 		fp2_free(ctx->ep2_pre[i].y);
 		fp2_free(ctx->ep2_pre[i].z);
@@ -272,53 +221,6 @@ void ep2_curve_get_b(fp2_t b) {
 	ctx_t *ctx = core_get();
 	fp_copy(b[0], ctx->ep2_b[0]);
 	fp_copy(b[1], ctx->ep2_b[1]);
-}
-
-void ep2_curve_get_vs(bn_t *v) {
-	bn_t x, t;
-
-	bn_null(x);
-	bn_null(t);
-
-	TRY {
-		bn_new(x);
-		bn_new(t);
-
-		fp_param_get_var(x);
-		bn_copy(v[1], x);
-		bn_copy(v[2], x);
-		bn_copy(v[3], x);
-
-		/* t = 2x^2. */
-		bn_sqr(t, x);
-		bn_dbl(t, t);
-
-		/* v0 = 2x^2 + 3x + 1. */
-		bn_mul_dig(v[0], x, 3);
-		bn_add_dig(v[0], v[0], 1);
-		bn_add(v[0], v[0], t);
-
-		/* v3 = -(2x^2 + x). */
-		bn_add(v[3], v[3], t);
-		bn_neg(v[3], v[3]);
-
-		/* v1 = 12x^3 + 8x^2 + x, v2 = 6x^3 + 4x^2 + x. */
-		bn_dbl(t, t);
-		bn_add(v[2], v[2], t);
-		bn_dbl(t, t);
-		bn_add(v[1], v[1], t);
-		bn_rsh(t, t, 2);
-		bn_mul(t, t, x);
-		bn_mul_dig(t, t, 3);
-		bn_add(v[2], v[2], t);
-		bn_dbl(t, t);
-		bn_add(v[1], v[1], t);
-	} CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	} FINALLY {
-		bn_free(x);
-		bn_free(t);
-	}
 }
 
 void ep2_curve_get_ord(bn_t n) {
@@ -384,18 +286,6 @@ void ep2_curve_set_twist(int type) {
 #elif FP_PRIME == 256
 			case BN_P256:
 				ASSIGN(BN_P256);
-				break;
-#elif FP_PRIME == 381
-			case B12_P381:
-				ASSIGN(B12_P381);
-				break;
-#elif FP_PRIME == 382
-			case BN_P382:
-				ASSIGN(BN_P382);
-				break;
-#elif FP_PRIME == 455
-			case B12_P455:
-				ASSIGN(B12_P455);
 				break;
 #elif FP_PRIME == 638
 			case BN_P638:

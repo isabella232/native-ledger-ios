@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -90,12 +90,6 @@ enum {
 	BN_P254,
 	/** Barreto-Naehrig curve with negative x. */
 	BN_P256,
-	/** Barreto-Lynn-Scott curve with embedding degree 12. */
-	B12_P381,
-	/** Barreto-Naehrig curve with negative x. */
-	BN_P382,
-	/** Barreto-Lynn-Scott curve with embedding degree 12. */
-	B12_P455,
 	/** Barreto-Lynn-Scott curve with embedding degree 24. */
 	B24_P477,
 	/** Kachisa-Schafer-Scott with negative x. */
@@ -125,57 +119,57 @@ enum {
 /**
  * Size of a precomputation table using the binary method.
  */
-#define RELIC_EP_TABLE_BASIC		(FP_BITS + 1)
+#define EP_TABLE_BASIC		(FP_BITS + 1)
 
 /**
  * Size of a precomputation table using Yao's windowing method.
  */
-#define RELIC_EP_TABLE_YAOWI      (FP_BITS / EP_DEPTH + 1)
+#define EP_TABLE_YAOWI      (FP_BITS / EP_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the NAF windowing method.
  */
-#define RELIC_EP_TABLE_NAFWI      (FP_BITS / EP_DEPTH + 1)
+#define EP_TABLE_NAFWI      (FP_BITS / EP_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the single-table comb method.
  */
-#define RELIC_EP_TABLE_COMBS      (1 << EP_DEPTH)
+#define EP_TABLE_COMBS      (1 << EP_DEPTH)
 
 /**
  * Size of a precomputation table using the double-table comb method.
  */
-#define RELIC_EP_TABLE_COMBD		(1 << (EP_DEPTH + 1))
+#define EP_TABLE_COMBD		(1 << (EP_DEPTH + 1))
 
 /**
  * Size of a precomputation table using the w-(T)NAF method.
  */
-#define RELIC_EP_TABLE_LWNAF		(1 << (EP_DEPTH - 2))
+#define EP_TABLE_LWNAF		(1 << (EP_DEPTH - 2))
 
 /**
  * Size of a precomputation table using the chosen algorithm.
  */
 #if EP_FIX == BASIC
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_BASIC
+#define EP_TABLE			EP_TABLE_BASIC
 #elif EP_FIX == YAOWI
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_YAOWI
+#define EP_TABLE			EP_TABLE_YAOWI
 #elif EP_FIX == NAFWI
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_NAFWI
+#define EP_TABLE			EP_TABLE_NAFWI
 #elif EP_FIX == COMBS
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_COMBS
+#define EP_TABLE			EP_TABLE_COMBS
 #elif EP_FIX == COMBD
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_COMBD
+#define EP_TABLE			EP_TABLE_COMBD
 #elif EP_FIX == LWNAF
-#define RELIC_EP_TABLE			RELIC_EP_TABLE_LWNAF
+#define EP_TABLE			EP_TABLE_LWNAF
 #endif
 
 /**
  * Maximum size of a precomputation table.
  */
 #ifdef STRIP
-#define RELIC_EP_TABLE_MAX RELIC_EP_TABLE
+#define EP_TABLE_MAX EP_TABLE
 #else
-#define RELIC_EP_TABLE_MAX MAX(RELIC_EP_TABLE_BASIC, RELIC_EP_TABLE_COMBD)
+#define EP_TABLE_MAX MAX(EP_TABLE_BASIC, EP_TABLE_COMBD)
 #endif
 
 /*============================================================================*/
@@ -295,7 +289,7 @@ typedef ep_st *ep_t;
 #endif
 
 /**
- * Negates a prime elliptic curve point. Computes R = -P.
+ * Negates a prime elliptic curve point.
  *
  * @param[out] R			- the result.
  * @param[in] P				- the point to negate.
@@ -307,7 +301,7 @@ typedef ep_st *ep_t;
 #endif
 
 /**
- * Adds two prime elliptic curve points. Computes R = P + Q.
+ * Adds two prime elliptic curve points.
  *
  * @param[out] R			- the result.
  * @param[in] P				- the first point to add.
@@ -320,7 +314,8 @@ typedef ep_st *ep_t;
 #endif
 
 /**
- * Subtracts a prime elliptic curve point from another. Computes R = P - Q.
+ * Subtracts a prime elliptic curve point from another, that is, compute
+ * R = P - Q.
  *
  * @param[out] R			- the result.
  * @param[in] P				- the first point.
@@ -333,7 +328,7 @@ typedef ep_st *ep_t;
 #endif
 
 /**
- * Doubles a prime elliptic curve point. Computes R = 2P.
+ * Doubles a prime elliptic curve point.
  *
  * @param[out] R			- the result.
  * @param[in] P				- the point to double.
@@ -717,7 +712,7 @@ int ep_size_bin(const ep_t a, int pack);
  * @param[in] bin			- the byte vector.
  * @param[in] len			- the buffer capacity.
  * @throw ERR_NO_VALID		- if the encoded point is invalid.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void ep_read_bin(ep_t a, const uint8_t *bin, int len);
 
@@ -729,7 +724,7 @@ void ep_read_bin(ep_t a, const uint8_t *bin, int len);
  * @param[in] len			- the buffer capacity.
  * @param[in] a				- the prime elliptic curve point to write.
  * @param[in] pack			- the flag to indicate point compression.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void ep_write_bin(uint8_t *bin, int len, const ep_t a, int pack);
 

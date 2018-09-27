@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -129,7 +129,13 @@ typedef unsigned long long ull_t;
  * Specification for aligned variables.
  */
 #if ALIGN > 1
+
+#if OPSYS == WINDOWS
+#define relic_align 			__declspec( align( ALIGN ) )
+#else
 #define relic_align 			__attribute__ ((aligned (ALIGN)))
+#endif
+
 #else
 #define relic_align 			/* empty*/
 #endif
@@ -146,7 +152,7 @@ typedef unsigned long long ull_t;
 /**
  * Align digit vector pointer to specified byte-boundary.
  *
- * @param[in,out] A		- the pointer to align.
+ * @param[in,out] A		- the pointer to relic_align.
  */
 #if ALIGN > 1
 #if ARCH == AVR || ARCH == MSP || ARCH == X86 || ARCH == ARM

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -53,56 +53,19 @@ void ep2_copy(ep2_t r, ep2_t p) {
 }
 
 int ep2_cmp(ep2_t p, ep2_t q) {
-    ep2_t r, s;
-    int result = CMP_EQ;
+	if (fp2_cmp(p->x, q->x) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-    ep2_null(r);
-    ep2_null(s);
+	if (fp2_cmp(p->y, q->y) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-    TRY {
-        ep2_new(r);
-        ep2_new(s);
+	if (fp2_cmp(p->z, q->z) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-        if ((!p->norm) && (!q->norm)) {
-            /* If the two points are not normalized, it is faster to compare
-             * x1 * z2^2 == x2 * z1^2 and y1 * z2^3 == y2 * z1^3. */
-            fp2_sqr(r->z, p->z);
-            fp2_sqr(s->z, q->z);
-            fp2_mul(r->x, p->x, s->z);
-            fp2_mul(s->x, q->x, r->z);
-            fp2_mul(r->z, r->z, p->z);
-            fp2_mul(s->z, s->z, q->z);
-            fp2_mul(r->y, p->y, s->z);
-            fp2_mul(s->y, q->y, r->z);
-        } else {
-            if (!p->norm) {
-                ep2_norm(r, p);
-            } else {
-                ep2_copy(r, p);
-            }
-
-            if (!q->norm) {
-                ep2_norm(s, q);
-            } else {
-                ep2_copy(s, q);
-            }
-        }
-
-        if (fp2_cmp(r->x, s->x) != CMP_EQ) {
-            result = CMP_NE;
-        }
-
-        if (fp2_cmp(r->y, s->y) != CMP_EQ) {
-            result = CMP_NE;
-        }
-    } CATCH_ANY {
-        THROW(ERR_CAUGHT);
-    } FINALLY {
-        ep2_free(r);
-        ep2_free(s);
-    }
-
-    return result;
+	return CMP_EQ;
 }
 
 void ep2_rand(ep2_t p) {
@@ -168,6 +131,24 @@ void ep2_rhs(fp2_t rhs, ep2_t p) {
 	}
 }
 
+void ep2_tab(ep2_t * t, ep2_t p, int w) {
+	if (w > 2) {
+		ep2_dbl(t[0], p);
+#if defined(EP_MIXED)
+		ep2_norm(t[0], t[0]);
+#endif
+		ep2_add(t[1], t[0], p);
+		for (int i = 2; i < (1 << (w - 2)); i++) {
+			ep2_add(t[i], t[i - 1], t[0]);
+		}
+#if defined(EP_MIXED)
+		for (int i = 1; i < (1 << (EP_WIDTH - 2)); i++) {
+			ep2_norm(t[i], t[i]);
+		}
+#endif
+	}
+	ep2_copy(t[0], p);
+}
 
 int ep2_is_valid(ep2_t p) {
 	ep2_t t;
@@ -190,23 +171,6 @@ int ep2_is_valid(ep2_t p) {
 		ep2_free(t);
 	}
 	return r;
-}
-
-void ep2_tab(ep2_t *t, ep2_t p, int w) {
-	if (w > 2) {
-		ep2_dbl(t[0], p);
-#if defined(EP_MIXED)
-		ep2_norm(t[0], t[0]);
-#endif
-		ep2_add(t[1], t[0], p);
-		for (int i = 2; i < (1 << (w - 2)); i++) {
-			ep2_add(t[i], t[i - 1], t[0]);
-		}
-#if defined(EP_MIXED)
-		ep2_norm_sim(t + 1, t + 1, (1 << (w - 2)) - 1);
-#endif
-	}
-	ep2_copy(t[0], p);
 }
 
 void ep2_print(ep2_t p) {
@@ -310,7 +274,7 @@ void ep2_write_bin(uint8_t *bin, int len, ep2_t a, int pack) {
 
 		if (pack) {
 			if (len < 2 * FP_BYTES + 1) {
-				THROW(ERR_NO_BUFFER);
+				THROW(ERR_NO_BUFFER);	
 			} else {
 				ep2_pck(t, t);
 				bin[0] = 2 | fp_get_bit(t->y[0], 0);

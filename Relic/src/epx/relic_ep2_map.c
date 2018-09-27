@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -37,7 +37,7 @@
 /*============================================================================*/
 
 /**
- * Multiplies a point by the cofactor in a Barreto-Naehrig curve.
+ * Multiplies a point on a Barreto-Naehrig curve by the cofactor.
  *
  * @param[out] r			- the result.
  * @param[in] p				- the point to multiply.
@@ -60,7 +60,10 @@ void ep2_mul_cof_bn(ep2_t r, ep2_t p) {
 		fp_param_get_var(x);
 
 		/* Compute t0 = xP. */
-		ep2_mul_basic(t0, p, x);
+		ep2_mul(t0, p, x);
+		if (bn_sign(x) == BN_NEG) {
+			ep2_neg(t0, t0);
+		}
 
 		/* Compute t1 = \psi(3xP). */
 		ep2_dbl(t1, t0);
@@ -90,7 +93,7 @@ void ep2_mul_cof_bn(ep2_t r, ep2_t p) {
 }
 
 /**
- * Multiplies a point by the cofactor in a Barreto-Lynn-Soctt.
+ * Multiplies a point on a Barreto-Lynn-Soctt curve by the cofactor.
  *
  * @param[out] r			- the result.
  * @param[in] p				- the point to multiply.
@@ -115,9 +118,15 @@ void ep2_mul_cof_b12(ep2_t r, ep2_t p) {
 		fp_param_get_var(x);
 
 		/* Compute t0 = xP. */
-		ep2_mul_basic(t0, p, x);
+		ep2_mul(t0, p, x);
+		if (bn_sign(x) == BN_NEG) {
+			ep2_neg(t0, t0);
+		}
 		/* Compute t1 = [x^2]P. */
-		ep2_mul_basic(t1, t0, x);
+		ep2_mul(t1, t0, x);
+		if (bn_sign(x) == BN_NEG) {
+			ep2_neg(t1, t1);
+		}
 
 		/* t2 = (x^2 - x - 1)P = x^2P - x*P - P. */
 		ep2_sub(t2, t1, t0);
@@ -150,7 +159,7 @@ void ep2_mul_cof_b12(ep2_t r, ep2_t p) {
 /* Public definitions                                                         */
 /*============================================================================*/
 
-void ep2_map(ep2_t p, const uint8_t *msg, int len) {
+void ep2_map(ep2_t p, uint8_t *msg, int len) {
 	bn_t x;
 	fp2_t t0;
 	uint8_t digest[MD_LEN];
@@ -185,12 +194,9 @@ void ep2_map(ep2_t p, const uint8_t *msg, int len) {
 			case BN_P158:
 			case BN_P254:
 			case BN_P256:
-			case BN_P382:
 			case BN_P638:
 				ep2_mul_cof_bn(p, p);
 				break;
-			case B12_P381:
-			case B12_P455:
 			case B12_P638:
 				ep2_mul_cof_b12(p, p);
 				break;
@@ -199,9 +205,6 @@ void ep2_map(ep2_t p, const uint8_t *msg, int len) {
 				ep2_curve_get_cof(x);
 				if (bn_bits(x) < BN_DIGIT) {
 					ep2_mul_dig(p, p, x->dp[0]);
-					if (bn_sign(x) == BN_NEG) {
-						ep2_neg(p, p);
-					}
 				} else {
 					ep2_mul(p, p, x);
 				}

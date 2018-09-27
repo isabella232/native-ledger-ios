@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -30,7 +30,6 @@
 
 #include <stdio.h>
 
-#include "relic_core.h"
 #include "relic_conf.h"
 #include "relic_bn.h"
 #include "relic_fp.h"
@@ -40,6 +39,7 @@
 #include "relic_ed.h"
 #include "relic_ec.h"
 #include "relic_pc.h"
+#include "relic_core.h"
 #include "relic_bench.h"
 
 /*============================================================================*/
@@ -48,7 +48,7 @@
 
 void conf_print(void) {
 #ifndef QUIET
-	util_print("-- RELIC " RELIC_VERSION " configuration:\n\n");
+	util_print("-- RELIC " VERSION " configuration:\n\n");
 #if ALLOC == STATIC
 	util_print("** Allocation mode: STATIC\n\n");
 #elif ALLOC == DYNAMIC
@@ -83,7 +83,7 @@ void conf_print(void) {
 
 #ifdef WITH_BN
 	util_print("** Multiple precision module options:\n");
-	util_print("   Precision: %d bits, %d words\n", RELIC_BN_BITS, BN_DIGS);
+	util_print("   Precision: %d bits, %d words\n", BN_BITS, BN_DIGS);
 	util_print("   Arithmetic method: " BN_METHD "\n\n");
 #endif
 

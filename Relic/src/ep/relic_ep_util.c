@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -54,56 +54,19 @@ void ep_copy(ep_t r, const ep_t p) {
 }
 
 int ep_cmp(const ep_t p, const ep_t q) {
-    ep_t r, s;
-    int result = CMP_EQ;
+	if (fp_cmp(p->x, q->x) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-    ep_null(r);
-    ep_null(s);
+	if (fp_cmp(p->y, q->y) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-    TRY {
-        ep_new(r);
-        ep_new(s);
+	if (fp_cmp(p->z, q->z) != CMP_EQ) {
+		return CMP_NE;
+	}
 
-        if ((!p->norm) && (!q->norm)) {
-            /* If the two points are not normalized, it is faster to compare
-             * x1 * z2^2 == x2 * z1^2 and y1 * z2^3 == y2 * z1^3. */
-            fp_sqr(r->z, p->z);
-            fp_sqr(s->z, q->z);
-            fp_mul(r->x, p->x, s->z);
-            fp_mul(s->x, q->x, r->z);
-            fp_mul(r->z, r->z, p->z);
-            fp_mul(s->z, s->z, q->z);
-            fp_mul(r->y, p->y, s->z);
-            fp_mul(s->y, q->y, r->z);
-        } else {
-            if (!p->norm) {
-                ep_norm(r, p);
-            } else {
-                ep_copy(r, p);
-            }
-
-            if (!q->norm) {
-                ep_norm(s, q);
-            } else {
-                ep_copy(s, q);
-            }
-        }
-
-        if (fp_cmp(r->x, s->x) != CMP_EQ) {
-            result = CMP_NE;
-        }
-
-        if (fp_cmp(r->y, s->y) != CMP_EQ) {
-            result = CMP_NE;
-        }
-    } CATCH_ANY {
-        THROW(ERR_CAUGHT);
-    } FINALLY {
-        ep_free(r);
-        ep_free(s);
-    }
-
-    return result;
+	return CMP_EQ;
 }
 
 void ep_rand(ep_t p) {
@@ -256,7 +219,7 @@ int ep_size_bin(const ep_t a, int pack) {
 	} CATCH_ANY {
 		THROW(ERR_CAUGHT);
 	} FINALLY {
-		ep_free(t);
+		ep_free(t);	
 	}
 
 	return size;
@@ -327,7 +290,7 @@ void ep_write_bin(uint8_t *bin, int len, const ep_t a, int pack) {
 
 		if (pack) {
 			if (len < FP_BYTES + 1) {
-				THROW(ERR_NO_BUFFER);
+				THROW(ERR_NO_BUFFER);	
 			} else {
 				ep_pck(t, t);
 				bin[0] = 2 | fp_get_bit(t->y, 0);

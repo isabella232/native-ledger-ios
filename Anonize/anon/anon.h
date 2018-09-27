@@ -11,6 +11,8 @@
 
 // export pure C functions to facilitate linking with GO program
 
+#define ANONIZE_VERSION "2.0.0"
+
 typedef struct _createsurveyresult {
 	const char* vid;
 	const char* vavk;

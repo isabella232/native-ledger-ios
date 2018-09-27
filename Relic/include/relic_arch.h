@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -67,7 +67,7 @@
 #if ARCH == AVR
 #define FETCH(STR, ID, L)	arch_copy_rom(STR, STRING(ID), L);
 #else
-#define FETCH(STR, ID, L)	memcpy(STR, ID, L);
+#define FETCH(STR, ID, L)	strncpy(STR, ID, L);
 #endif
 
 /*============================================================================*/

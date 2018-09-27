@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -1116,7 +1116,9 @@ int cp_rsa_sig_quick(uint8_t *sig, int *sig_len, uint8_t *msg, int msg_len, int 
 int cp_rsa_ver(uint8_t *sig, int sig_len, uint8_t *msg, int msg_len, int hash, rsa_t pub) {
 	bn_t m, eb;
 	int size, pad_len, result;
-	uint8_t h1[MAX(msg_len, MD_LEN) + 8], h2[MAX(msg_len, MD_LEN)];
+	uint8_t * h1 = NULL, * h2 = NULL;
+  RELIC_CHECKED_MALLOC(h1, uint8_t, MAX(msg_len, MD_LEN) + 8);
+  RELIC_CHECKED_MALLOC(h2, uint8_t, MAX(msg_len, MD_LEN));
 
 	/* We suppose that the signature is invalid. */
 	result = 0;
@@ -1210,6 +1212,8 @@ int cp_rsa_ver(uint8_t *sig, int sig_len, uint8_t *msg, int msg_len, int hash, r
 	FINALLY {
 		bn_free(m);
 		bn_free(eb);
+		free(h1);
+		free(h2);
 	}
 
 	return result;

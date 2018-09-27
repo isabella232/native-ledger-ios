@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -51,7 +51,7 @@
  * multiple precision integer must grow. Otherwise, it represents the fixed
  * fixed precision.
  */
-#define RELIC_BN_BITS 	((int)BN_PRECI)
+#define BN_BITS 	((int)BN_PRECI)
 
 /**
  * Size in bits of a digit.
@@ -66,12 +66,12 @@
 /**
  * Size in digits of a block sufficient to store the required precision.
  */
-#define BN_DIGS		((int)((RELIC_BN_BITS)/(BN_DIGIT) + (RELIC_BN_BITS % BN_DIGIT > 0)))
+#define BN_DIGS		((int)((BN_BITS)/(BN_DIGIT) + (BN_BITS % BN_DIGIT > 0)))
 
 /**
  * Size in bytes of a block sufficient to store the required precision.
  */
-#define RELIC_BN_BYTES 	((int)((RELIC_BN_BITS)/8 + ((RELIC_BN_BITS % 8) > 0)))
+#define BN_BYTES 	((int)((BN_BITS)/8 + ((BN_BITS % 8) > 0)))
 
 /**
  * Size in digits of a block sufficient to store a multiple precision integer.
@@ -1347,9 +1347,9 @@ void bn_rec_tnaf(int8_t *tnaf, int *len, const bn_t k, int8_t u, int m, int w);
 void bn_rec_rtnaf(int8_t *tnaf, int *len, const bn_t k, int8_t u, int m, int w);
 
 /**
- * Write the constants needed for \tau-NAF recoding as a set of \alpha_u =
+ * Write the constants needed for \tau-NAF recoding as a set of \alpha_u = 
  * \beta_u + \gamma_u * \tau elements.
- *
+ * 
  * @param[out] t 		- the integer corresponding to \tau.
  * @param[out] beta		- the first coefficients of the constants.
  * @param[out] gama		- the second coefficients of the constants.

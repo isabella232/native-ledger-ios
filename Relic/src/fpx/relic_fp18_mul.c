@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -25,6 +25,7 @@
  *
  * Implementation of multiplication in a octodecic extension of a prime field.
  *
+ * @version $Id$
  * @ingroup fpx
  */
 
@@ -150,7 +151,66 @@ static void fp6_mul_dxs_basic(fp6_t c, fp6_t a, fp6_t b) {
 	}
 }
 
-static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
+static void fp6_mul_dxs_unr(dv6_t c, fp6_t a, fp6_t b) {
+	fp3_t t0, t1, t2;
+	dv3_t t3, t4, t5;
+
+	fp3_null(t0);
+	fp3_null(t1);
+	fp3_null(t2);
+	fp3_null(t3);
+	fp3_null(t4);
+	fp3_null(t5);
+
+	TRY {
+		fp3_new(t0);
+		fp3_new(t1);
+		fp3_new(t2);
+		fp3_new(t3);
+		fp3_new(t4);
+		fp3_new(t5);
+
+		fp_copy(t0[0], a[0][0]);
+		fp_copy(t0[1], a[2][0]);
+		fp_copy(t0[2], a[1][1]);
+		fp_copy(t1[0], a[1][0]);
+		fp_copy(t1[1], a[0][1]);
+		fp_copy(t1[2], a[2][1]);
+		fp_copy(t2[0], b[1][0]);
+		fp_copy(t2[1], b[0][1]);
+		fp_copy(t2[2], b[2][1]);
+
+		fp3_muln_low(t4, t1, t2);
+		fp3_add(t0, t0, t1);
+		fp3_muln_low(t5, t0, t2);
+		for (int i = 0; i < 3; i++) {
+			fp_subc_low(t5[i], t5[i], t4[i]);
+		}
+
+		dv_zero(t3[0], 2 * FP_DIGS);
+		for (int i = -1; i >= fp_prime_get_cnr(); i--) {
+			fp_subc_low(t3[0], t3[0], t4[2]);
+		}
+
+		dv_copy(c[0][0], t3[0], 2 * FP_DIGS);
+		dv_copy(c[2][0], t4[0], 2 * FP_DIGS);
+		dv_copy(c[1][1], t4[1], 2 * FP_DIGS);
+		dv_copy(c[1][0], t5[0], 2 * FP_DIGS);
+		dv_copy(c[0][1], t5[1], 2 * FP_DIGS);
+		dv_copy(c[2][1], t5[2], 2 * FP_DIGS);
+	} CATCH_ANY {
+		THROW(ERR_CAUGHT);
+	} FINALLY {
+		fp3_free(t0);
+		fp3_free(t1);
+		fp3_free(t2);
+		fp3_free(t3);
+		fp3_free(t4);
+		fp3_free(t5);
+	}
+}
+
+/*static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
 	fp2_t v0, v1, v2, t0, t1, t2;
 
 	fp2_null(v0);
@@ -168,19 +228,15 @@ static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_new(t1);
 		fp2_new(t2);
 
-		/* v0 = a_0b_0 */
 		fp2_mul(v0, a[0], b[0]);
 
-		/* v1 = a_1b_1 */
 		fp_mul(v1[0], a[1][0], b[1][0]);
 		fp_mul(v1[1], a[1][1], b[1][0]);
 
-		/* v2 = a_2b_2 */
 		fp_mul(v2[0], a[2][0], b[2][1]);
 		fp_mul(v2[1], a[2][1], b[2][1]);
 		fp2_mul_art(v2, v2);
 
-		/* t2 (c_0) = v0 + E((a_1 + a_2)(b_1 + b_2) - v1 - v2) */
 		fp2_add(t0, a[1], a[2]);
 		fp_copy(t1[0], b[1][0]);
 		fp_copy(t1[1], b[2][1]);
@@ -190,7 +246,6 @@ static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_mul_nor(t0, t2);
 		fp2_add(t2, t0, v0);
 
-		/* c_1 = (a_0 + a_1)(b_0 + b_1) - v0 - v1 + Ev2 */
 		fp2_add(t0, a[0], a[1]);
 		fp_add(t1[0], b[0][0], b[1][0]);
 		fp_copy(t1[1], b[0][1]);
@@ -200,7 +255,6 @@ static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_mul_nor(t0, v2);
 		fp2_add(c[1], c[1], t0);
 
-		/* c_2 = (a_0 + a_2)(b_0 + b_2) - v0 + v1 - v2 */
 		fp2_add(t0, a[0], a[2]);
 		fp_copy(t1[0], b[0][0]);
 		fp_add(t1[1], b[0][1], b[2][1]);
@@ -209,7 +263,6 @@ static void fp6_mul0_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_add(c[2], c[2], v1);
 		fp2_sub(c[2], c[2], v2);
 
-		/* c_0 = t2 */
 		fp2_copy(c[0], t2);
 	} CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -241,20 +294,16 @@ static void fp6_mul1_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_new(t1);
 		fp2_new(t2);
 
-		/* v0 = a_0b_0 */
 		fp_mul(v0[0], a[0][0], b[0][0]);
 		fp_mul(v0[1], a[0][1], b[0][0]);
 
-		/* v1 = a_1b_1 */
 		fp_mul(v1[0], a[1][0], b[1][1]);
 		fp_mul(v1[1], a[1][1], b[1][1]);
 		fp2_mul_art(v1, v1);
 
-		/* v2 = a_2b_2 */
 		fp_mul(v2[0], a[2][0], b[2][0]);
 		fp_mul(v2[1], a[2][1], b[2][0]);
 
-		/* t2 (c_0) = v0 + E((a_1 + a_2)(b_1 + b_2) - v1 - v2) */
 		fp2_add(t0, a[1], a[2]);
 		fp_copy(t1[0], b[2][0]);
 		fp_copy(t1[1], b[1][1]);
@@ -264,7 +313,6 @@ static void fp6_mul1_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_mul_nor(t0, t2);
 		fp2_add(t2, t0, v0);
 
-		/* c_1 = (a_0 + a_1)(b_0 + b_1) - v0 - v1 + Ev2 */
 		fp2_add(t0, a[0], a[1]);
 		fp_copy(t1[0], b[0][0]);
 		fp_copy(t1[1], b[1][1]);
@@ -274,7 +322,6 @@ static void fp6_mul1_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_mul_nor(t0, v2);
 		fp2_add(c[1], c[1], t0);
 
-		/* c_2 = (a_0 + a_2)(b_0 + b_2) - v0 + v1 - v2 */
 		fp2_add(t0, a[0], a[2]);
 		fp_add(t1[0], b[0][0], b[2][0]);
 		fp_zero(t1[1]);
@@ -284,7 +331,6 @@ static void fp6_mul1_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_add(c[2], c[2], v1);
 		fp2_sub(c[2], c[2], v2);
 
-		/* c_0 = t2 */
 		fp2_copy(c[0], t2);
 	} CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -296,7 +342,7 @@ static void fp6_mul1_basic(fp6_t c, fp6_t a, fp6_t b) {
 		fp2_free(v1);
 		fp2_free(v0);
 	}
-}
+}*/
 
 void fp18_mul_dxs_basic(fp18_t c, fp18_t a, fp18_t b) {
 #if EP_ADD == BASIC
@@ -402,65 +448,6 @@ void fp18_mul_dxs_basic(fp18_t c, fp18_t a, fp18_t b) {
 #endif
 
 #if PP_EXT == LAZYR || !defined(STRIP)
-
-static void fp6_mul_dxs_unr(dv6_t c, fp6_t a, fp6_t b) {
-	fp3_t t0, t1, t2;
-	dv3_t t3, t4, t5;
-
-	fp3_null(t0);
-	fp3_null(t1);
-	fp3_null(t2);
-	fp3_null(t3);
-	fp3_null(t4);
-	fp3_null(t5);
-
-	TRY {
-		fp3_new(t0);
-		fp3_new(t1);
-		fp3_new(t2);
-		fp3_new(t3);
-		fp3_new(t4);
-		fp3_new(t5);
-
-		fp_copy(t0[0], a[0][0]);
-		fp_copy(t0[1], a[2][0]);
-		fp_copy(t0[2], a[1][1]);
-		fp_copy(t1[0], a[1][0]);
-		fp_copy(t1[1], a[0][1]);
-		fp_copy(t1[2], a[2][1]);
-		fp_copy(t2[0], b[1][0]);
-		fp_copy(t2[1], b[0][1]);
-		fp_copy(t2[2], b[2][1]);
-
-		fp3_muln_low(t4, t1, t2);
-		fp3_add(t0, t0, t1);
-		fp3_muln_low(t5, t0, t2);
-		for (int i = 0; i < 3; i++) {
-			fp_subc_low(t5[i], t5[i], t4[i]);
-		}
-
-		dv_zero(t3[0], 2 * FP_DIGS);
-		for (int i = -1; i >= fp_prime_get_cnr(); i--) {
-			fp_subc_low(t3[0], t3[0], t4[2]);
-		}
-
-		dv_copy(c[0][0], t3[0], 2 * FP_DIGS);
-		dv_copy(c[2][0], t4[0], 2 * FP_DIGS);
-		dv_copy(c[1][1], t4[1], 2 * FP_DIGS);
-		dv_copy(c[1][0], t5[0], 2 * FP_DIGS);
-		dv_copy(c[0][1], t5[1], 2 * FP_DIGS);
-		dv_copy(c[2][1], t5[2], 2 * FP_DIGS);
-	} CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	} FINALLY {
-		fp3_free(t0);
-		fp3_free(t1);
-		fp3_free(t2);
-		fp3_free(t3);
-		fp3_free(t4);
-		fp3_free(t5);
-	}
-}
 
 void fp18_mul_lazyr(fp18_t c, fp18_t a, fp18_t b) {
 	dv6_t u0, u1, u2, u3, u4, u5;

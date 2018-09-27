@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -53,9 +53,9 @@ static void bn_div_imp(bn_t c, bn_t d, const bn_t a, const bn_t b) {
 	bn_null(y);
 	bn_null(r);
 
-	/* If |a| < |b|, we're done. */
+	/* If a < b, we're done. */
 	if (bn_cmp_abs(a, b) == CMP_LT) {
-		if (bn_sign(a) == bn_sign(b)) {
+		if (bn_sign(a) == BN_POS) {
 			if (c != NULL) {
 				bn_zero(c);
 			}
@@ -65,10 +65,16 @@ static void bn_div_imp(bn_t c, bn_t d, const bn_t a, const bn_t b) {
 		} else {
 			if (c != NULL) {
 				bn_set_dig(c, 1);
-				bn_neg(c, c);
+				if (bn_sign(b) == BN_POS) {
+					bn_neg(c, c);
+				}
 			}
 			if (d != NULL) {
-				bn_add(d, a, b);
+				if (bn_sign(b) == BN_POS) {
+					bn_add(d, a, b);	
+				} else {
+					bn_sub(d, a, b);
+				}
 			}
 		}
 		return;
@@ -94,21 +100,21 @@ static void bn_div_imp(bn_t c, bn_t d, const bn_t a, const bn_t b) {
 			q->used = a->used - b->used + 1;
 			q->sign = sign;
 			bn_trim(q);
-			if (bn_sign(a) == bn_sign(b)) {
-				bn_copy(c, q);
-			} else {
+			if (bn_sign(a) == BN_NEG) {
 				bn_sub_dig(c, q, 1);
+			} else {
+				bn_copy(c, q);
 			}
 		}
 
 		if (d != NULL) {
 			r->used = b->used;
-			r->sign = b->sign;
+			r->sign = a->sign;
 			bn_trim(r);
-			if (bn_sign(a) == bn_sign(b)) {
-				bn_copy(d, r);
+			if (bn_sign(a) == BN_NEG) {
+				bn_add(d, r, b);
 			} else {
-				bn_sub(d, b, r);
+				bn_copy(d, r);
 			}
 		}
 	}

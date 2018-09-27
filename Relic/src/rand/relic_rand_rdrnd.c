@@ -23,104 +23,43 @@
 /**
  * @file
  *
- * Implementation of point multiplication on prime elliptic curves over
- * quadratic extensions.
+ * Implementation of the wrapper around the Intel RdRand instruction.
  *
- * @ingroup epx
+ * @ingroup rand
  */
 
+#include <immintrin.h>
+
+#include "relic_conf.h"
 #include "relic_core.h"
+#include "relic_label.h"
+#include "relic_rand.h"
 
 /*============================================================================*/
 /* Public definitions                                                         */
 /*============================================================================*/
 
-void ep2_mul(ep2_t r, ep2_t p, bn_t k) {
-	int i, l;
-	ep2_t t;
+#if RAND == RDRND
 
-	ep2_null(t);
-	TRY {
-		ep2_new(t);
-		l = bn_bits(k);
+void rand_bytes(uint8_t *buf, int size) {
+	int i = 0, j;
+	unsigned long long r;
 
-		if (bn_get_bit(k, l - 1)) {
-			ep2_copy(t, p);
-		} else {
-			ep2_set_infty(t);
-		}
-
-		for (i = l - 2; i >= 0; i--) {
-			ep2_dbl(t, t);
-			if (bn_get_bit(k, i)) {
-				ep2_add(t, t, p);
-			}
-		}
-
-		ep2_copy(r, t);
-		ep2_norm(r, r);
-	}
-	CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	}
-	FINALLY {
-		ep2_free(t);
-	}
-}
-
-void ep2_mul_gen(ep2_t r, bn_t k) {
-#ifdef EP_PRECO
-	ep2_mul_fix(r, ep2_curve_get_tab(), k);
+	while (i < size) {
+#ifdef __RDRND__
+		while (_rdrand64_step(&r) == 0);
 #else
-	ep2_t g;
-
-	ep2_null(g);
-
-	TRY {
-		ep2_new(g);
-		ep2_curve_get_gen(g);
-		ep2_mul(r, g, k);
-	}
-	CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	}
-	FINALLY {
-		ep2_free(g);
-	}
+#error "RdRand not available, check your compiler settings."
 #endif
-}
-
-void ep2_mul_dig(ep2_t r, ep2_t p, dig_t k) {
-	int i, l;
-	ep2_t t;
-
-	ep2_null(t);
-
-	if (k == 0) {
-		ep2_set_infty(r);
-		return;
-	}
-
-	TRY {
-		ep2_new(t);
-
-		l = util_bits_dig(k);
-
-		ep2_copy(t, p);
-
-		for (i = l - 2; i >= 0; i--) {
-			ep2_dbl(t, t);
-			if (k & ((dig_t)1 << i)) {
-				ep2_add(t, t, p);
-			}
+		for (j = 0; i < size && j < sizeof(ull_t); i++, j++) {
+			buf[i] = r & 0xFF;
 		}
-
-		ep2_norm(r, t);
-	}
-	CATCH_ANY {
-		THROW(ERR_CAUGHT);
-	}
-	FINALLY {
-		ep2_free(t);
 	}
 }
+
+void rand_seed(uint8_t *buf, int size) {
+	/* Do nothing, mark as seeded. */
+	core_get()->seeded = 1;
+}
+
+#endif

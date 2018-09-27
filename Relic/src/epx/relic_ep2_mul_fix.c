@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -79,11 +79,6 @@ static void ep2_mul_fix_ordin(ep2_t r, ep2_t *table, bn_t k) {
 	int len, i, n;
 	int8_t naf[2 * FP_BITS + 1], *t;
 
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
-
 	/* Compute the w-TNAF representation of k. */
 	len = 2 * FP_BITS + 1;
 	bn_rec_naf(naf, &len, k, EP_DEPTH);
@@ -103,9 +98,6 @@ static void ep2_mul_fix_ordin(ep2_t r, ep2_t *table, bn_t k) {
 	}
 	/* Convert r to affine coordinates. */
 	ep2_norm(r, r);
-	if (bn_sign(k) == BN_NEG) {
-		ep2_neg(r, r);
-	}
 }
 
 #endif /* EP_FIX == LWNAF */
@@ -140,22 +132,18 @@ void ep2_mul_pre_basic(ep2_t *t, ep2_t p) {
 }
 
 void ep2_mul_fix_basic(ep2_t r, ep2_t *t, bn_t k) {
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
+	int i, l;
+
+	l = bn_bits(k);
 
 	ep2_set_infty(r);
 
-	for (int i = 0; i < bn_bits(k); i++) {
+	for (i = 0; i < l; i++) {
 		if (bn_get_bit(k, i)) {
 			ep2_add(r, r, t[i]);
 		}
 	}
 	ep2_norm(r, r);
-	if (bn_sign(k) == BN_NEG) {
-		ep2_neg(r, r);
-	}
 }
 
 #endif
@@ -194,11 +182,6 @@ void ep2_mul_fix_yaowi(ep2_t r, ep2_t *t, bn_t k) {
 	ep2_t a;
 	uint8_t win[CEIL(2 * FP_BITS, EP_DEPTH)];
 
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
-
 	ep2_null(a);
 
 	TRY {
@@ -219,9 +202,6 @@ void ep2_mul_fix_yaowi(ep2_t r, ep2_t *t, bn_t k) {
 			ep2_add(r, r, a);
 		}
 		ep2_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep2_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -270,11 +250,6 @@ void ep2_mul_fix_nafwi(ep2_t r, ep2_t *t, bn_t k) {
 	int8_t naf[2 * FP_BITS + 1];
 	char w;
 
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
-
 	ep2_null(a);
 
 	TRY {
@@ -317,9 +292,6 @@ void ep2_mul_fix_nafwi(ep2_t r, ep2_t *t, bn_t k) {
 			ep2_add(r, r, a);
 		}
 		ep2_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep2_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -362,7 +334,7 @@ void ep2_mul_pre_combs(ep2_t *t, ep2_t p) {
 			}
 		}
 #if defined(EP_MIXED)
-		for (i = 1; i < RELIC_EP_TABLE_COMBS; i++) {
+		for (i = 1; i < EP_TABLE_COMBS; i++) {
 			ep2_norm(t[i], t[i]);
 		}
 #endif
@@ -378,11 +350,6 @@ void ep2_mul_pre_combs(ep2_t *t, ep2_t p) {
 void ep2_mul_fix_combs(ep2_t r, ep2_t *t, bn_t k) {
 	int i, j, l, w, n0, p0, p1;
 	bn_t n;
-
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
 
 	bn_null(n);
 
@@ -423,9 +390,6 @@ void ep2_mul_fix_combs(ep2_t r, ep2_t *t, bn_t k) {
 			}
 		}
 		ep2_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep2_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);
@@ -475,7 +439,7 @@ void ep2_mul_pre_combd(ep2_t *t, ep2_t p) {
 			}
 		}
 #if defined(EP_MIXED)
-		for (i = 1; i < RELIC_EP_TABLE_COMBD; i++) {
+		for (i = 1; i < EP_TABLE_COMBD; i++) {
 			ep2_norm(t[i], t[i]);
 		}
 #endif
@@ -491,11 +455,6 @@ void ep2_mul_pre_combd(ep2_t *t, ep2_t p) {
 void ep2_mul_fix_combd(ep2_t r, ep2_t *t, bn_t k) {
 	int i, j, d, e, w0, w1, n0, p0, p1;
 	bn_t n;
-
-	if (bn_is_zero(k)) {
-		ep2_set_infty(r);
-		return;
-	}
 
 	bn_null(n);
 
@@ -536,9 +495,6 @@ void ep2_mul_fix_combd(ep2_t r, ep2_t *t, bn_t k) {
 			ep2_add(r, r, t[(1 << EP_DEPTH) + w1]);
 		}
 		ep2_norm(r, r);
-		if (bn_sign(k) == BN_NEG) {
-			ep2_neg(r, r);
-		}
 	}
 	CATCH_ANY {
 		THROW(ERR_CAUGHT);

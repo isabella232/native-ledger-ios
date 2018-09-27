@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -73,11 +73,11 @@
  * Size of a precomputation table using the chosen algorithm.
  */
 #if EC_CUR == PRIME
-#define RELIC_EC_TABLE			RELIC_EP_TABLE
+#define EC_TABLE			EP_TABLE
 #elif EC_CUR == CHAR2
-#define RELIC_EC_TABLE			RELIC_EB_TABLE
+#define EC_TABLE			EB_TABLE
 #elif EC_CUR == EDWARD
-#define RELIC_EC_TABLE			RELIC_ED_TABLE
+#define EC_TABLE			ED_TABLE
 #endif
 
 /**

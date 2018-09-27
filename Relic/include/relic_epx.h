@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -47,57 +47,57 @@
 /**
  * Size of a precomputation table using the binary method.
  */
-#define RELIC_EPX_TABLE_BASIC		(2 * FP_BITS + 1)
+#define EPX_TABLE_BASIC		(2 * FP_BITS + 1)
 
 /**
  * Size of a precomputation table using Yao's windowing method.
  */
-#define RELIC_EPX_TABLE_YAOWI      (2 * FP_BITS / EP_DEPTH + 1)
+#define EPX_TABLE_YAOWI      (2 * FP_BITS / EP_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the NAF windowing method.
  */
-#define RELIC_EPX_TABLE_NAFWI      (2 * FP_BITS / EP_DEPTH + 1)
+#define EPX_TABLE_NAFWI      (2 * FP_BITS / EP_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the single-table comb method.
  */
-#define RELIC_EPX_TABLE_COMBS      (1 << EP_DEPTH)
+#define EPX_TABLE_COMBS      (1 << EP_DEPTH)
 
 /**
  * Size of a precomputation table using the double-table comb method.
  */
-#define RELIC_EPX_TABLE_COMBD		(1 << (EP_DEPTH + 1))
+#define EPX_TABLE_COMBD		(1 << (EP_DEPTH + 1))
 
 /**
  * Size of a precomputation table using the w-(T)NAF method.
  */
-#define RELIC_EPX_TABLE_LWNAF		(1 << (EP_DEPTH - 2))
+#define EPX_TABLE_LWNAF		(1 << (EP_DEPTH - 2))
 
 /**
  * Size of a precomputation table using the chosen algorithm.
  */
 #if EP_FIX == BASIC
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_BASIC
+#define EPX_TABLE			EPX_TABLE_BASIC
 #elif EP_FIX == YAOWI
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_YAOWI
+#define EPX_TABLE			EPX_TABLE_YAOWI
 #elif EP_FIX == NAFWI
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_NAFWI
+#define EPX_TABLE			EPX_TABLE_NAFWI
 #elif EP_FIX == COMBS
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_COMBS
+#define EPX_TABLE			EPX_TABLE_COMBS
 #elif EP_FIX == COMBD
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_COMBD
+#define EPX_TABLE			EPX_TABLE_COMBD
 #elif EP_FIX == LWNAF
-#define RELIC_EPX_TABLE			RELIC_EPX_TABLE_LWNAF
+#define EPX_TABLE			EPX_TABLE_LWNAF
 #endif
 
 /**
  * Maximum size of a precomputation table.
  */
 #ifdef STRIP
-#define RELIC_EPX_TABLE_MAX RELIC_EPX_TABLE
+#define EPX_TABLE_MAX EPX_TABLE
 #else
-#define RELIC_EPX_TABLE_MAX MAX(RELIC_EPX_TABLE_BASIC, RELIC_EPX_TABLE_COMBD)
+#define EPX_TABLE_MAX MAX(EPX_TABLE_BASIC, EPX_TABLE_COMBD)
 #endif
 
 
@@ -244,7 +244,6 @@ typedef ep3_st *ep3_t;
 
 /**
  * Negates a point in an elliptic curve over a quadratic extension field.
- * Computes R = -P.
  *
  * @param[out] R				- the result.
  * @param[in] P					- the point to negate.
@@ -285,7 +284,7 @@ typedef ep3_st *ep3_t;
 
 /**
  * Doubles a point in an elliptic curve over a quadratic extension field.
- * Computes R = 2P.
+ * Computes R = 2 * P.
  *
  * @param[out] R				- the result.
  * @param[in] P					- the point to double.
@@ -294,24 +293,6 @@ typedef ep3_st *ep3_t;
 #define ep2_dbl(R, P)			ep2_dbl_basic(R, P);
 #elif EP_ADD == PROJC
 #define ep2_dbl(R, P)			ep2_dbl_projc(R, P);
-#endif
-
-/**
- * Multiplies a point in an elliptic curve over a quadratic extension field.
- * Computes R = kP.
- *
- * @param[out] R			- the result.
- * @param[in] P				- the point to multiply.
- * @param[in] K				- the integer.
- */
-#if EP_MUL == BASIC
-#define ep2_mul(R, P, K)		ep2_mul_basic(R, P, K)
-#elif EP_MUL == SLIDE
-#define ep2_mul(R, P, K)		ep2_mul_slide(R, P, K)
-#elif EP_MUL == MONTY
-#define ep2_mul(R, P, K)		ep2_mul_monty(R, P, K)
-#elif EP_MUL == LWNAF
-#define ep2_mul(R, P, K)		ep2_mul_lwnaf(R, P, K)
 #endif
 
 /**
@@ -371,16 +352,16 @@ typedef ep3_st *ep3_t;
  * @param[in] P					- the first point to multiply.
  * @param[in] K					- the first integer.
  * @param[in] Q					- the second point to multiply.
- * @param[in] M					- the second integer,
+ * @param[in] L					- the second integer,
  */
 #if EP_SIM == BASIC
-#define ep2_mul_sim(R, P, K, Q, M)	ep2_mul_sim_basic(R, P, K, Q, M)
+#define ep2_mul_sim(R, P, K, Q, L)	ep2_mul_sim_basic(R, P, K, Q, L)
 #elif EP_SIM == TRICK
-#define ep2_mul_sim(R, P, K, Q, M)	ep2_mul_sim_trick(R, P, K, Q, M)
+#define ep2_mul_sim(R, P, K, Q, L)	ep2_mul_sim_trick(R, P, K, Q, L)
 #elif EP_SIM == INTER
-#define ep2_mul_sim(R, P, K, Q, M)	ep2_mul_sim_inter(R, P, K, Q, M)
+#define ep2_mul_sim(R, P, K, Q, L)	ep2_mul_sim_inter(R, P, K, Q, L)
 #elif EP_SIM == JOINT
-#define ep2_mul_sim(R, P, K, Q, M)	ep2_mul_sim_joint(R, P, K, Q, M)
+#define ep2_mul_sim(R, P, K, Q, L)	ep2_mul_sim_joint(R, P, K, Q, L)
 #endif
 
 /*============================================================================*/
@@ -410,13 +391,6 @@ void ep2_curve_get_a(fp2_t a);
  * @param[out] b			- the 'b' coefficient of the elliptic curve.
  */
 void ep2_curve_get_b(fp2_t b);
-
-/**
- * Returns the vector of coefficients required to perform GLV method.
- *
- * @param[out] b			- the vector of coefficients.
- */
-void ep2_curve_get_vs(bn_t *v);
 
 /**
  * Returns a optimization identifier based on the 'a' coefficient of the curve.
@@ -567,7 +541,7 @@ int ep2_size_bin(ep2_t a, int pack);
  * @param[in] bin			- the byte vector.
  * @param[in] len			- the buffer capacity.
  * @throw ERR_NO_VALID		- if the encoded point is invalid.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void ep2_read_bin(ep2_t a, uint8_t *bin, int len);
 
@@ -579,7 +553,7 @@ void ep2_read_bin(ep2_t a, uint8_t *bin, int len);
  * @param[in] len			- the buffer capacity.
  * @param[in] a				- the prime elliptic curve point to write.
  * @param[in] pack			- the flag to indicate point compression.
- * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid.
+ * @throw ERR_NO_BUFFER		- if the buffer capacity is invalid. 
  */
 void ep2_write_bin(uint8_t *bin, int len, ep2_t a, int pack);
 
@@ -681,51 +655,14 @@ void ep2_dbl_slp_basic(ep2_t r, fp2_t s, ep2_t p);
 void ep2_dbl_projc(ep2_t r, ep2_t p);
 
 /**
- * Multiplies a prime elliptic point by an integer using the binary method.
+ * Multiplies a point in a elliptic curve over a quadratic extension by an
+ * integer scalar.
  *
  * @param[out] r			- the result.
  * @param[in] p				- the point to multiply.
- * @param[in] k				- the integer.
+ * @param[in] k				- the scalar.
  */
-void ep2_mul_basic(ep2_t r, ep2_t p, const bn_t k);
-
-/**
- * Multiplies a prime elliptic point by an integer using the sliding window
- * method.
- *
- * @param[out] r			- the result.
- * @param[in] p				- the point to multiply.
- * @param[in] k				- the integer.
- */
-void ep2_mul_slide(ep2_t r, ep2_t p, const bn_t k);
-
-/**
- * Multiplies a prime elliptic point by an integer using the constant-time
- * Montgomery laddering point multiplication method.
- *
- * @param[out] r			- the result.
- * @param[in] p				- the point to multiply.
- * @param[in] k				- the integer.
- */
-void ep2_mul_monty(ep2_t r, ep2_t p, const bn_t k);
-
-/**
- * Multiplies a prime elliptic point by an integer using the w-NAF method.
- *
- * @param[out] r			- the result.
- * @param[in] p				- the point to multiply.
- * @param[in] k				- the integer.
- */
-void ep2_mul_lwnaf(ep2_t r, ep2_t p, const bn_t k);
-
-/**
- * Multiplies a prime elliptic point by an integer using a regular method.
- *
- * @param[out] r			- the result.
- * @param[in] p				- the point to multiply.
- * @param[in] k				- the integer.
- */
-void ep2_mul_lwreg(ep2_t r, ep2_t p, const bn_t k);
+void ep2_mul(ep2_t r, ep2_t p, bn_t k);
 
 /**
  * Multiplies the generator of an elliptic curve over a qaudratic extension.
@@ -857,9 +794,10 @@ void ep2_mul_fix_lwnaf(ep2_t r, ep2_t *t, bn_t k);
  * @param[in] p				- the first point to multiply.
  * @param[in] k				- the first integer.
  * @param[in] q				- the second point to multiply.
- * @param[in] m				- the second integer,
+ * @param[in] l				- the second integer,
  */
-void ep2_mul_sim_basic(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
+void ep2_mul_sim_basic(ep2_t r, ep2_t p, bn_t k, ep2_t q,
+		bn_t l);
 
 /**
  * Multiplies and adds two prime elliptic curve points simultaneously using
@@ -869,9 +807,10 @@ void ep2_mul_sim_basic(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
  * @param[in] p				- the first point to multiply.
  * @param[in] k				- the first integer.
  * @param[in] q				- the second point to multiply.
- * @param[in] m				- the second integer,
+ * @param[in] l				- the second integer,
  */
-void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
+void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q,
+		bn_t l);
 
 /**
  * Multiplies and adds two prime elliptic curve points simultaneously using
@@ -881,9 +820,10 @@ void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
  * @param[in] p				- the first point to multiply.
  * @param[in] k				- the first integer.
  * @param[in] q				- the second point to multiply.
- * @param[in] m				- the second integer,
+ * @param[in] l				- the second integer,
  */
-void ep2_mul_sim_inter(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
+void ep2_mul_sim_inter(ep2_t r, ep2_t p, bn_t k, ep2_t q,
+		bn_t l);
 
 /**
  * Multiplies and adds two prime elliptic curve points simultaneously using
@@ -893,9 +833,10 @@ void ep2_mul_sim_inter(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
  * @param[in] p				- the first point to multiply.
  * @param[in] k				- the first integer.
  * @param[in] q				- the second point to multiply.
- * @param[in] m				- the second integer,
+ * @param[in] l				- the second integer,
  */
-void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
+void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q,
+		bn_t l);
 
 /**
  * Multiplies and adds the generator and a prime elliptic curve point
@@ -904,9 +845,9 @@ void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m);
  * @param[out] r			- the result.
  * @param[in] k				- the first integer.
  * @param[in] q				- the second point to multiply.
- * @param[in] m				- the second integer,
+ * @param[in] l				- the second integer,
  */
-void ep2_mul_sim_gen(ep2_t r, bn_t k, ep2_t q, bn_t m);
+void ep2_mul_sim_gen(ep2_t r, bn_t k, ep2_t q, bn_t l);
 
 /**
  * Multiplies a prime elliptic point by a small integer.
@@ -926,22 +867,13 @@ void ep2_mul_dig(ep2_t r, ep2_t p, dig_t k);
 void ep2_norm(ep2_t r, ep2_t p);
 
 /**
- * Converts multiple points to affine coordinates.
- *
- * @param[out] r			- the result.
- * @param[in] t				- the points to convert.
- * @param[in] n				- the number of points.
- */
-void ep2_norm_sim(ep2_t *r, ep2_t *t, int n);
-
-/**
  * Maps a byte array to a point in an elliptic curve over a quadratic extension.
  *
  * @param[out] p			- the result.
  * @param[in] msg			- the byte array to map.
  * @param[in] len			- the array length in bytes.
  */
-void ep2_map(ep2_t p, const uint8_t *msg, int len);
+void ep2_map(ep2_t p, uint8_t *msg, int len);
 
 /**
  * Computes a power of the Gailbraith-Lin-Scott homomorphism of a point

@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (C) 2007-2017 RELIC Authors
+ * Copyright (C) 2007-2015 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -58,59 +58,59 @@ enum {
 /**
  * Size of a precomputation table using the binary method.
  */
-#define RELIC_ED_TABLE_BASIC		(FP_BITS + 1)
+#define ED_TABLE_BASIC		(FP_BITS + 1)
 
 /**
  * Size of a precomputation table using Yao's windowing method.
  */
-#define RELIC_ED_TABLE_YAOWI      (FP_BITS / ED_DEPTH + 1)
+#define ED_TABLE_YAOWI      (FP_BITS / ED_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the NAF windowing method.
  */
-#define RELIC_ED_TABLE_NAFWI      (FP_BITS / ED_DEPTH + 1)
+#define ED_TABLE_NAFWI      (FP_BITS / ED_DEPTH + 1)
 
 /**
  * Size of a precomputation table using the single-table comb method.
  */
-#define RELIC_ED_TABLE_COMBS      (1 << ED_DEPTH)
+#define ED_TABLE_COMBS      (1 << ED_DEPTH)
 
 /**
  * Size of a precomputation table using the double-table comb method.
  */
-#define RELIC_ED_TABLE_COMBD		(1 << (ED_DEPTH + 1))
+#define ED_TABLE_COMBD		(1 << (ED_DEPTH + 1))
 
 /**
  * Size of a precomputation table using the w-(T)NAF method.
  */
-#define RELIC_ED_TABLE_LWNAF		(1 << (ED_DEPTH - 2))
+#define ED_TABLE_LWNAF		(1 << (ED_DEPTH - 2))
 
 /**
  * Size of a precomputation table using the chosen algorithm.
  */
 #if ED_FIX == BASIC
-#define RELIC_ED__TABLE			RELIC_ED_TABLE_BASIC
+#define ED_TABLE			ED_TABLE_BASIC
 #elif ED_FIX == YAOWI
-#define RELIC_ED_TABLE			RELIC_ED_TABLE_YAOWI
+#define ED_TABLE			ED_TABLE_YAOWI
 #elif ED_FIX == NAFWI
-#define RELIC_ED_TABLE			RELIC_ED_TABLE_NAFWI
+#define ED_TABLE			ED_TABLE_NAFWI
 #elif ED_FIX == COMBS
-#define RELIC_ED_TABLE			RELIC_ED_TABLE_COMBS
+#define ED_TABLE			ED_TABLE_COMBS
 #elif ED_FIX == COMBD
-#define RELIC_ED_TABLE			RELIC_ED_TABLE_COMBD
+#define ED_TABLE			ED_TABLE_COMBD
 #elif ED_FIX == LWNAF
-#define RELIC_ED_TABLE			RELIC_ED_TABLE_LWNAF
+#define ED_TABLE			ED_TABLE_LWNAF
 #elif ED_FIX == LWNAF_MIXED
-#define RELIC_ED_TABLE                  RELIC_ED_TABLE_LWNAF
+#define ED_TABLE      ED_TABLE_LWNAF
 #endif
 
 /**
  * Maximum size of a precomputation table.
  */
 #ifdef STRIP
-#define RELIC_ED_TABLE_MAX RELIC_ED_TABLE
+#define ED_TABLE_MAX ED_TABLE
 #else
-#define RELIC_ED_TABLE_MAX MAX(RELIC_ED_TABLE_BASIC, RELIC_ED_TABLE_COMBD)
+#define ED_TABLE_MAX MAX(ED_TABLE_BASIC, ED_TABLE_COMBD)
 #endif
 
 /*============================================================================*/
@@ -335,6 +335,11 @@ void ed_param_print(void);
  * Returns the current security level.
  */
 int ed_param_level(void);
+
+/**
+ * Recovers the x coordinate of and Edwards curve point given y coordinate and d.
+ */
+void ed_recover_x(fp_t x, const fp_t y, const fp_t d, const fp_t a);
 
 #if ED_ADD == EXTND
 /**
