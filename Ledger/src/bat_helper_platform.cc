@@ -10,7 +10,6 @@
 #include "base/path_service.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task_scheduler/post_task.h"
 #include "url/url_canon_stdstring.h"
 #include "url/url_util.h"
 #endif

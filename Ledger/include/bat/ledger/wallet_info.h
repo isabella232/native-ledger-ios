@@ -10,15 +10,9 @@
 #include <vector>
 
 #include "bat/ledger/export.h"
+#include "bat/ledger/grant.h"
 
 namespace ledger {
-
-struct GRANT {
-  std::string altcurrency;
-  std::string probi;
-  unsigned int expiryTime;
-};
-
 LEDGER_EXPORT struct WalletInfo {
   WalletInfo();
   ~WalletInfo();
@@ -26,11 +20,12 @@ LEDGER_EXPORT struct WalletInfo {
   std::string altcurrency_;
   std::string probi_;
   double balance_;
+  double fee_amount_;
   std::map<std::string, double> rates_;
   std::vector<double> parameters_choices_;
   std::vector<double> parameters_range_;
   unsigned int parameters_days_;
-  std::vector<GRANT> grants_;
+  std::vector<Grant> grants_;
 };
 
 }  // namespace ledger

@@ -3,6 +3,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #import "BATClient.h"
+#include "ledger_impl.h"
+
+class _BATClient : bat_ledger::LedgerImpl {
+};
 
 @interface BATClient () {
 //  bat_ledger::LedgerImpl ledger;

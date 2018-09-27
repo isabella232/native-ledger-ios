@@ -11,9 +11,11 @@
 #define LEDGER_PRODUCTION_SERVER        "https://ledger.mercury.basicattentiontoken.org"
 #define BALANCE_STAGING_SERVER          "https://balance-staging.mercury.basicattentiontoken.org"
 #define BALANCE_PRODUCTION_SERVER       "https://balance.mercury.basicattentiontoken.org"
+#define PUBLISHER_STAGING_SERVER        "https://publishers-staging.basicattentiontoken.org"
+#define PUBLISHER_PRODUCTION_SERVER     "https://publishers.basicattentiontoken.org"
+
 
 #define PREFIX_V2                       "/v2"
-#define PREFIX_V3                       "/v3"
 #define REGISTER_PERSONA                "/registrar/persona"
 #define REGISTER_VIEWING                "/registrar/viewing"
 #define WALLET_PROPERTIES               "/wallet/"
@@ -23,10 +25,10 @@
 #define SURVEYOR_BATCH_VOTING           "/batch/surveyor/voting"
 #define UPDATE_RULES_V1                 "/v1/publisher/ruleset?consequential=true"
 #define UPDATE_RULES_V2                 "/v2/publisher/ruleset?limit=512&excludedOnly=false"
-#define RECOVER_WALLET_PUBLIC_KEY       "/v2/wallet?publicKey="
-#define RECOVER_WALLET                  "/v2/wallet/"
-#define GET_SET_PROMOTION                "/v1/grants"
-#define GET_PROMOTION_CAPTCHA            "/v1/captchas/"
+#define RECOVER_WALLET_PUBLIC_KEY       "/wallet?publicKey="
+#define GET_SET_PROMOTION               "/grants"
+#define GET_PROMOTION_CAPTCHA           "/captchas/"
+#define GET_PUBLISHERS_LIST_V1          "/api/v1/public/channels"
 
 #define REGISTRARVK_FIELDNAME           "registrarVK"
 #define VERIFICATION_FIELDNAME          "verification"
@@ -45,8 +47,9 @@
 #define MEDIA_CACHE_DB_NAME             "9956db89-9105-420b-9ad4-49348bc536af"
 
 #define YOUTUBE_MEDIA_TYPE              "youtube"
-#define TWITCH_MEDIA_TYPE                "twitch"
-#define YOUTUBE_PROVIDER_NAME            "YouTube"
+#define TWITCH_MEDIA_TYPE               "twitch"
+#define YOUTUBE_PROVIDER_NAME           "YouTube"
+#define TWITCH_PROVIDER_NAME           	"Twitch"
 #define YOUTUBE_PROVIDER_URL            "https://www.youtube.com/oembed"
 
 #define SEED_LENGTH                     32
@@ -59,7 +62,6 @@
 
 namespace braveledger_ledger {
 
-static const bool g_isProduction = false;
 static const uint8_t g_hkdfSalt[] = {126, 244, 99, 158, 51, 68, 253, 80, 133, 183, 51, 180, 77,
   62, 74, 252, 62, 106, 96, 125, 241, 110, 134, 87, 190, 208,
   158, 84, 125, 69, 246, 207, 162, 247, 107, 172, 37, 34, 53,
@@ -67,7 +69,7 @@ static const uint8_t g_hkdfSalt[] = {126, 244, 99, 158, 51, 68, 253, 80, 133, 18
   91, 10, 169, 145, 248, 22, 147, 117, 24, 105, 12};
 
 static const double _d = 1.0 / (30.0 * 1000.0);
-static const unsigned int _default_min_pubslisher_duration = 8000;  // In milliseconds
+static const uint64_t _default_min_pubslisher_duration = 8;  // In seconds
 
 static const uint64_t _milliseconds_day = 24 * 60 * 60 * 1000;
 static const uint64_t _milliseconds_hour = 60 * 60 * 1000;
@@ -78,6 +80,8 @@ static const unsigned int _twitch_events_array_size = 8;
 // Important: set _twitch_events_array_size as a correct array size when you modify items in _twitch_events
 static const std::string _twitch_events[] = {"buffer-empty", "buffer-refill", "video_end",
   "minute-watched", "video_pause", "player_click_vod_seek", "video-play", "video_error"};
+
+static const uint64_t _publishers_list_load_interval = 48 * 60 * 60; //48 hours in seconds
 
 }  // namespace braveledger_ledger
 

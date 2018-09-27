@@ -31,57 +31,31 @@ BatClient::BatClient(bat_ledger::LedgerImpl* ledger) :
 BatClient::~BatClient() {
 }
 
-std::string BatClient::buildURL(const std::string& path, const std::string& prefix, const bool isBalance = false) {
-  std::string url;
-  if (isBalance) {
-    if (braveledger_ledger::g_isProduction) {
-      url = BALANCE_PRODUCTION_SERVER;
-    } else {
-      url = BALANCE_STAGING_SERVER;
-    }
-  } else {
-    if (braveledger_ledger::g_isProduction) {
-      url = LEDGER_PRODUCTION_SERVER;
-    } else {
-      url = LEDGER_STAGING_SERVER;
-    }
-  }
-
-  return url + prefix + path;
-}
-
-void BatClient::loadStateOrRegisterPersonaCallback(bool success, const std::string& data) {
-  if (!success) {
-    LOG(ERROR) << "!!!here1";
-    registerPersona();
-    return;
-  }
-
+bool BatClient::loadState(const std::string& data) {
   braveledger_bat_helper::CLIENT_STATE_ST state;
-  braveledger_bat_helper::loadFromJson(state, data.c_str());
-
-  LOG(ERROR) << "!!!bat address == " << state.walletInfo_.addressBAT_;
-  LOG(ERROR) << "!!!card address == " << state.walletInfo_.addressCARD_ID_;
+  if (!braveledger_bat_helper::loadFromJson(state, data.c_str()))
+    return false;
 
   state_.reset(new braveledger_bat_helper::CLIENT_STATE_ST(state));
-  ledger_->OnWalletCreated(ledger::Result::OK);
+  return true;
 }
 
 void BatClient::registerPersona() {
-  auto request_id = ledger_->LoadURL(buildURL(REGISTER_PERSONA, PREFIX_V2),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL(REGISTER_PERSONA, PREFIX_V2),
       std::vector<std::string>(), "", "",
       ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::requestCredentialsCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::requestCredentialsCallback(bool result, const std::string& response) {
+void BatClient::requestCredentialsCallback(bool result, const std::string& response, const std::map<std::string, std::string>& headers) {
   //LOG(ERROR) << "!!!response == " << response;
   if (!result) {
-    // TODO errors handling
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
     return;
   }
   if (state_->personaId_.empty()) {
@@ -92,10 +66,17 @@ void BatClient::requestCredentialsCallback(bool result, const std::string& respo
   state_->userId_.erase(std::remove(state_->userId_.begin(), state_->userId_.end(), '-'), state_->userId_.end());
   state_->userId_.erase(12, 1);
 
-  braveledger_bat_helper::getJSONValue(REGISTRARVK_FIELDNAME, response, state_->registrarVK_);
+  if (!braveledger_bat_helper::getJSONValue(REGISTRARVK_FIELDNAME, response, state_->registrarVK_)) {
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
+    return;
+  }
   DCHECK(!state_->registrarVK_.empty());
   std::string proof = getAnonizeProof(state_->registrarVK_, state_->userId_, state_->preFlight_);
 
+  if (proof.empty()) {
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
+    return;
+  }
   state_->walletInfo_.keyInfoSeed_ = braveledger_bat_helper::generateSeed();
   std::vector<uint8_t> secretKey = braveledger_bat_helper::getHKDF(state_->walletInfo_.keyInfoSeed_);
   std::vector<uint8_t> publicKey;
@@ -122,19 +103,20 @@ void BatClient::requestCredentialsCallback(bool result, const std::string& respo
   requestCredentials.request_body_octets_ = octets;
   std::string payloadStringify = braveledger_bat_helper::stringifyRequestCredentialsSt(requestCredentials);
   //LOG(ERROR) << "!!!payloadStringify == " << payloadStringify;
-  std::vector<std::string> headers;
-  headers.push_back("Content-Type: application/json; charset=UTF-8");
+  std::vector<std::string> registerHeaders;
+  registerHeaders.push_back("Content-Type: application/json; charset=UTF-8");
 
   // We should use simple callbacks on iOS
   auto request_id = ledger_->LoadURL(
-    buildURL((std::string)REGISTER_PERSONA + "/" + state_->userId_, PREFIX_V2),
-    headers, payloadStringify, "application/json; charset=utf-8",
+    braveledger_bat_helper::buildURL((std::string)REGISTER_PERSONA + "/" + state_->userId_, PREFIX_V2),
+    registerHeaders, payloadStringify, "application/json; charset=utf-8",
     ledger::URL_METHOD::POST, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::registerPersonaCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
 std::string BatClient::getAnonizeProof(const std::string& registrarVK, const std::string& id, std::string& preFlight) {
@@ -142,46 +124,57 @@ std::string BatClient::getAnonizeProof(const std::string& registrarVK, const std
   if (nullptr != cred) {
     preFlight = cred;
     free((void*)cred);
+  } else {
+    return "";
   }
-  DCHECK(!preFlight.empty());
   const char* proofTemp = registerUserMessage(preFlight.c_str(), registrarVK.c_str());
   std::string proof;
   if (nullptr != proofTemp) {
     proof = proofTemp;
     free((void*)proofTemp);
+  } else {
+    return "";
   }
-  DCHECK(!proof.empty());
 
   return proof;
 }
 
 void BatClient::registerPersonaCallback(bool result,
-                                       const std::string& response) {
+                                       const std::string& response,
+                                       const std::map<std::string, std::string>& headers) {
   if (!result) {
-    // TODO error handling
-    ledger_->OnWalletCreated(ledger::Result::ERROR);
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
     return;
   }
 
   std::string verification;
-  braveledger_bat_helper::getJSONValue(VERIFICATION_FIELDNAME, response, verification);
+  if (!braveledger_bat_helper::getJSONValue(VERIFICATION_FIELDNAME, response, verification)) {
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
+    return;
+  }
   const char* masterUserToken = registerUserFinal(state_->userId_.c_str(), verification.c_str(),
     state_->preFlight_.c_str(), state_->registrarVK_.c_str());
   if (nullptr != masterUserToken) {
     state_->masterUserToken_ = masterUserToken;
     free((void*)masterUserToken);
+  } else if (!braveledger_bat_helper::ignore_for_testing()) {
+    ledger_->OnWalletInitialized(ledger::Result::REGISTRATION_VERIFICATION_FAILED);
+    return;
   }
 
-  LOG(ERROR) << "!!!registerPersonaCallback response == " << response;
-  braveledger_bat_helper::getJSONWalletInfo(response, state_->walletInfo_, state_->fee_currency_, state_->fee_amount_, state_->days_);
+  if (!braveledger_bat_helper::getJSONWalletInfo(response, state_->walletInfo_, state_->fee_currency_, state_->fee_amount_, state_->days_)) {
+    ledger_->OnWalletInitialized(ledger::Result::BAD_REGISTRATION_RESPONSE);
+    return;
+  }
   state_->bootStamp_ = braveledger_bat_helper::currentTime() * 1000;
   state_->reconcileStamp_ = state_->bootStamp_ + state_->days_ * 24 * 60 * 60 * 1000;
 
-  // TODO debug
-  //getPromotionCaptcha();
-  //
+  ledger_->OnWalletInitialized(ledger::Result::LEDGER_OK);
   saveState();
-  ledger_->OnWalletCreated(ledger::Result::OK);
+}
+
+bool BatClient::didUserChangeContributionAmount() const {
+  return state_->user_changed_fee_;
 }
 
 void BatClient::setContributionAmount(const double& amount) {
@@ -189,8 +182,31 @@ void BatClient::setContributionAmount(const double& amount) {
   saveState();
 }
 
+void BatClient::setUserChangedContribution() {
+    state_->user_changed_fee_ = true;
+    saveState();
+  }
+
 double BatClient::getContributionAmount() const {
   return state_->fee_amount_;
+}
+
+void BatClient::setRewardsMainEnabled(const bool& enabled) {
+  state_->rewards_enabled_ = enabled;
+  saveState();
+}
+
+bool BatClient::getRewardsMainEnabled() const {
+  return state_->rewards_enabled_;
+}
+
+void BatClient::setAutoContribute(const bool& enabled) {
+  state_->auto_contribute_ = enabled;
+  saveState();
+}
+
+bool BatClient::getAutoContribute() const {
+  return state_->auto_contribute_;
 }
 
 const std::string& BatClient::getBATAddress() const {
@@ -209,10 +225,14 @@ const std::string& BatClient::getLTCAddress() const {
   return state_->walletInfo_.addressLTC_;
 }
 
+uint64_t BatClient::getReconcileStamp() const {
+  return state_->reconcileStamp_;
+}
+
 void BatClient::getWalletProperties() {
   std::string path = (std::string)WALLET_PROPERTIES + state_->walletInfo_.paymentId_ + WALLET_PROPERTIES_END;
    auto request_id = ledger_->LoadURL(
-       buildURL(path, PREFIX_V2, true),
+       braveledger_bat_helper::buildURL(path, PREFIX_V2, braveledger_bat_helper::SERVER_TYPES::BALANCE),
        std::vector<std::string>(),
        "",
        "",
@@ -223,20 +243,26 @@ void BatClient::getWalletProperties() {
                               std::bind(&BatClient::walletPropertiesCallback,
                                         this,
                                         _1,
-                                        _2));
+                                        _2,
+                                        _3));
  }
 
  void BatClient::walletPropertiesCallback(bool success,
-                                           const std::string& response) {
+                                          const std::string& response,
+                                          const std::map<std::string, std::string>& headers) {
+   braveledger_bat_helper::WALLET_PROPERTIES_ST properties;
    if (!success) {
-     LOG(ERROR) << "walletPropertiesCallback error";
+      ledger_->OnWalletProperties(ledger::Result::LEDGER_ERROR, properties);
      return;
    }
 
-   braveledger_bat_helper::WALLET_PROPERTIES_ST properties;
-   braveledger_bat_helper::loadFromJson(properties, response);
+   bool ok = braveledger_bat_helper::loadFromJson(properties, response);
+   if (!ok) {
+     ledger_->OnWalletProperties(ledger::Result::LEDGER_ERROR, properties);
+     return;
+   }
    state_->walletProperties_ = properties;
-   ledger_->OnWalletProperties(properties);
+   ledger_->OnWalletProperties(ledger::Result::LEDGER_OK, properties);
  }
 
 bool BatClient::isReadyForReconcile() {
@@ -247,7 +273,7 @@ bool BatClient::isReadyForReconcile() {
 void BatClient::reconcile(const std::string& viewingId) {
   currentReconcile_->viewingId_ = viewingId;
 
-  auto request_id = ledger_->LoadURL(buildURL((std::string)RECONCILE_CONTRIBUTION + state_->userId_, PREFIX_V2),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)RECONCILE_CONTRIBUTION + state_->userId_, PREFIX_V2),
       std::vector<std::string>(), "", "",
       ledger::URL_METHOD::GET,
       &handler_);
@@ -256,11 +282,13 @@ void BatClient::reconcile(const std::string& viewingId) {
                              std::bind(&BatClient::reconcileCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::reconcileCallback(bool result, const std::string& response) {
-  LOG(ERROR) << "!!!reconcileCallback response == " + response;
+void BatClient::reconcileCallback(bool result,
+                                  const std::string& response,
+                                  const std::map<std::string, std::string>& headers) {
   if (!result) {
     // TODO errors handling
     return;
@@ -273,20 +301,23 @@ void BatClient::reconcileCallback(bool result, const std::string& response) {
 void BatClient::currentReconcile() {
   std::ostringstream amount;
   amount << state_->fee_amount_;
-  std::string path = (std::string)WALLET_PROPERTIES + state_->walletInfo_.paymentId_ + "?refresh=true&amount=" + amount.str() + "&altcurrency=" + state_->fee_currency_;
+  std::string path = (std::string)WALLET_PROPERTIES + state_->walletInfo_.paymentId_ + "?amount=" + amount.str() + "&altcurrency=" + state_->fee_currency_;
 
-  auto request_id = ledger_->LoadURL(buildURL(path, ""),
+  LOG(ERROR) << "!!!currentReconcile path == " << path;
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL(path, PREFIX_V2),
       std::vector<std::string>(), "", "",
       ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::currentReconcileCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::currentReconcileCallback(bool result, const std::string& response) {
-  //LOG(ERROR) << "!!!currentReconcileCallback response == " << response;
+void BatClient::currentReconcileCallback(bool result,
+                                         const std::string& response,
+                                         const std::map<std::string, std::string>& headers) {
   if (!result) {
     // TODO errors handling
     return;
@@ -334,23 +365,25 @@ void BatClient::currentReconcileCallback(bool result, const std::string& respons
   std::string payloadStringify = braveledger_bat_helper::stringifyReconcilePayloadSt(reconcilePayload);
   //LOG(ERROR) << "!!!payloadStringify == " << payloadStringify;
 
-  std::vector<std::string> headers;
-  headers.push_back("Content-Type: application/json; charset=UTF-8");
+  std::vector<std::string> walletHeader;
+  walletHeader.push_back("Content-Type: application/json; charset=UTF-8");
   std::string path = (std::string)WALLET_PROPERTIES + state_->walletInfo_.paymentId_;
 
-  auto request_id = ledger_->LoadURL(buildURL(path, ""),
-    headers, payloadStringify, "application/json; charset=utf-8",
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL(path),
+    walletHeader, payloadStringify, "application/json; charset=utf-8",
     ledger::URL_METHOD::PUT,
     &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::reconcilePayloadCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::reconcilePayloadCallback(bool result, const std::string& response) {
-  //LOG(ERROR) << "!!!response reconcilePayloadCallback == " << response;
+void BatClient::reconcilePayloadCallback(bool result,
+                                         const std::string& response,
+                                         const std::map<std::string, std::string>& headers) {
   if (!result) {
     // TODO errors handling
     return;
@@ -371,7 +404,7 @@ void BatClient::reconcilePayloadCallback(bool result, const std::string& respons
   registerViewing();
   //
   /*
-  auto request_id = ledger_->LoadURL(buildURL(UPDATE_RULES_V1, ""),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL(UPDATE_RULES_V1),
     std::vector<std::string>(), "", "", ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::updateRulesCallback,
@@ -383,14 +416,13 @@ void BatClient::reconcilePayloadCallback(bool result, const std::string& respons
 }
 
 void BatClient::updateRulesCallback(bool reconcile, bool result, const std::string& response) {
-  LOG(ERROR) << "!!!response updateRulesCallback == " << response;
   if (!result) {
     // TODO errors handling
     return;
   }
   state_->ruleset_ = response;
 
-  auto request_id = ledger_->LoadURL(buildURL(UPDATE_RULES_V2, ""),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL(UPDATE_RULES_V2),
     std::vector<std::string>(), "", "",
     ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
@@ -398,11 +430,14 @@ void BatClient::updateRulesCallback(bool reconcile, bool result, const std::stri
                                        this,
                                        reconcile,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::updateRulesV2Callback(bool reconcile, bool result, const std::string& response) {
-  LOG(ERROR) << "!!!response updateRulesV2Callback == " << response;
+void BatClient::updateRulesV2Callback(bool reconcile,
+                                      bool result,
+                                      const std::string& response,
+                                      const std::map<std::string, std::string>& headers) {
   if (!result) {
     // TODO errors handling
     return;
@@ -417,18 +452,20 @@ void BatClient::updateRulesV2Callback(bool reconcile, bool result, const std::st
 }
 
 void BatClient::registerViewing() {
-  auto request_id = ledger_->LoadURL(buildURL((std::string)REGISTER_VIEWING, PREFIX_V2),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)REGISTER_VIEWING, PREFIX_V2),
     std::vector<std::string>(), "", "",
     ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::registerViewingCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::registerViewingCallback(bool result, const std::string& response) {
-  LOG(ERROR) << "!!!response registerViewingCallback == " << response;
+void BatClient::registerViewingCallback(bool result,
+                                        const std::string& response,
+                                        const std::map<std::string, std::string>& headers) {
   if (!result) {
     // TODO errors handling
     return;
@@ -449,20 +486,23 @@ void BatClient::registerViewingCallback(bool result, const std::string& response
 }
 
 void BatClient::viewingCredentials(const std::string& proofStringified, const std::string& anonizeViewingId) {
-  auto request_id = ledger_->LoadURL(buildURL((std::string)REGISTER_VIEWING + "/" + anonizeViewingId, PREFIX_V2),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)REGISTER_VIEWING + "/" + anonizeViewingId, PREFIX_V2),
     std::vector<std::string>(), proofStringified, "application/json; charset=utf-8",
     ledger::URL_METHOD::POST, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::viewingCredentialsCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::viewingCredentialsCallback(bool result, const std::string& response) {
+void BatClient::viewingCredentialsCallback(bool result,
+                                           const std::string& response,
+                                           const std::map<std::string, std::string>& headers) {
   //LOG(ERROR) << "!!!response viewingCredentialsCallback == " << response;
   if (!result) {
-    ledger_->OnReconcileComplete(ledger::Result::ERROR, currentReconcile_->viewingId_);
+    ledger_->OnReconcileComplete(ledger::Result::LEDGER_ERROR, currentReconcile_->viewingId_);
     // TODO errors handling
     return;
   }
@@ -492,7 +532,7 @@ void BatClient::viewingCredentialsCallback(bool result, const std::string& respo
   }
 
   saveState();
-  ledger_->OnReconcileComplete(ledger::Result::OK, currentReconcile_->viewingId_);
+  ledger_->OnReconcileComplete(ledger::Result::LEDGER_OK, currentReconcile_->viewingId_);
   //LOG(ERROR) << "!!!response masterUserToken == " << currentReconcile_.masterUserToken_;
 }
 
@@ -575,16 +615,19 @@ void BatClient::prepareBallots() {
 }
 
 void BatClient::prepareBatch(const braveledger_bat_helper::BALLOT_ST& ballot, const braveledger_bat_helper::TRANSACTION_ST& transaction) {
-  auto request_id = ledger_->LoadURL(buildURL((std::string)SURVEYOR_BATCH_VOTING + "/" + transaction.anonizeViewingId_, PREFIX_V2),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)SURVEYOR_BATCH_VOTING + "/" + transaction.anonizeViewingId_, PREFIX_V2),
     std::vector<std::string>(), "", "", ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::prepareBatchCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::prepareBatchCallback(bool result, const std::string& response) {
+void BatClient::prepareBatchCallback(bool result,
+                                     const std::string& response,
+                                     const std::map<std::string, std::string>& headers) {
   //LOG(ERROR) << "!!!!prepareBatchCallback response == " << response;
   std::vector<std::string> surveyors;
   braveledger_bat_helper::getJSONBatchSurveyors(response, surveyors);
@@ -622,9 +665,6 @@ void BatClient::proofBatch(const std::vector<braveledger_bat_helper::BATCH_PROOF
   for (size_t i = 0; i < batchProof.size(); i++) {
     braveledger_bat_helper::SURVEYOR_ST surveyor;
     braveledger_bat_helper::loadFromJson(surveyor, batchProof[i].ballot_.prepareBallot_);
-
-    std::string surveyorIdEncoded;
-    braveledger_bat_helper::encodeURIComponent(surveyor.surveyorId_, surveyorIdEncoded);
 
     std::string signatureToSend;
     size_t delimeterPos = surveyor.signature_.find(',');
@@ -729,19 +769,23 @@ void BatClient::voteBatch() {
   std::string payload = braveledger_bat_helper::stringifyBatch(voteBatch);//braveledger_bat_helper::stringify(keysMsg, valuesMsg, 1);
 
   auto request_id = ledger_->LoadURL(
-    buildURL((std::string)SURVEYOR_BATCH_VOTING , PREFIX_V2),
+    braveledger_bat_helper::buildURL((std::string)SURVEYOR_BATCH_VOTING , PREFIX_V2),
     std::vector<std::string>(), payload, "application/json; charset=utf-8", ledger::URL_METHOD::POST, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::voteBatchCallback,
                                        this,
                                        batchVotes.publisher_,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
   // TODO make wait and call voteBatch again after that only
   // const delayTime = random.randomInt({ min: 10 * msecs.second, max: 1 * msecs.minute })
 }
 
-void BatClient::voteBatchCallback(const std::string& publisher, bool result, const std::string& response) {
+void BatClient::voteBatchCallback(const std::string& publisher,
+                                  bool result,
+                                  const std::string& response,
+                                  const std::map<std::string, std::string>& headers) {
   //LOG(ERROR) << "!!!voteBatchCallback response == " << response;
   std::vector<std::string> surveyors;
   braveledger_bat_helper::getJSONBatchSurveyors(response, surveyors);
@@ -778,7 +822,7 @@ void BatClient::voteBatchCallback(const std::string& publisher, bool result, con
 //   extraData.string1 = ballot.viewingId_;
 //   extraData.string2 = ballot.surveyorId_;
 
-//   auto request_id = ledger_->LoadURL(buildURL((std::string)SURVEYOR_VOTING + surveyorIdEncoded + "/" + transaction.anonizeViewingId_, PREFIX_V2),
+//   auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)SURVEYOR_VOTING + surveyorIdEncoded + "/" + transaction.anonizeViewingId_, PREFIX_V2),
 //     std::vector<std::string>(), "", "", ledger::URL_METHOD::GET, &handler_);
 //   handler_.AddRequestHandler(std::move(request_id),
 //                              std::bind(&BatClient::prepareBallotCallback,
@@ -843,7 +887,7 @@ void BatClient::voteBatchCallback(const std::string& publisher, bool result, con
 //   std::string values[1] = {anonProof};
 //   std::string payload = braveledger_bat_helper::stringify(keys, values, 1);
 
-//   auto request_id = ledger_->LoadURL(buildURL((std::string)SURVEYOR_VOTING + surveyorIdEncoded, PREFIX_V2),
+//   auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)SURVEYOR_VOTING + surveyorIdEncoded, PREFIX_V2),
 //     std::vector<std::string>(), payload, "", ledger::URL_METHOD::PUT, &handler_);
 //   handler_.AddRequestHandler(std::move(request_id),
 //                              std::bind(&BatClient::commitBallotCallback,
@@ -858,7 +902,7 @@ void BatClient::voteBatchCallback(const std::string& publisher, bool result, con
 //   // TODO add ballots to transaction, saveState, remove ballots from vector of ballots
 // }
 
-std::string BatClient::getWalletPassphrase() {
+std::string BatClient::getWalletPassphrase() const {
   DCHECK(state_->walletInfo_.keyInfoSeed_.size());
   std::string passPhrase;
   if (0 == state_->walletInfo_.keyInfoSeed_.size()) {
@@ -867,7 +911,6 @@ std::string BatClient::getWalletPassphrase() {
     char* words = nullptr;
   int result = bip39_mnemonic_from_bytes(nullptr, &state_->walletInfo_.keyInfoSeed_.front(),
     state_->walletInfo_.keyInfoSeed_.size(), &words);
-  LOG(ERROR) << "!!!getWalletPassphrase result == " << result << ", !!!words == " << words;
   if (0 != result) {
     DCHECK(false);
 
@@ -882,7 +925,7 @@ std::string BatClient::getWalletPassphrase() {
 void BatClient::saveState() {
   std::string data;
   braveledger_bat_helper::saveToJsonString(*state_, data);
-  ledger_->SaveLedgerState(data, this);
+  ledger_->SaveLedgerState(data);
 }
 
 void BatClient::recoverWallet(const std::string& passPhrase) {
@@ -890,10 +933,12 @@ void BatClient::recoverWallet(const std::string& passPhrase) {
   newSeed.resize(32);
   size_t written = 0;
   int result = bip39_mnemonic_to_bytes(nullptr, passPhrase.c_str(), &newSeed.front(), newSeed.size(), &written);
-  LOG(ERROR) << "!!!recoverWallet result == " << result << "!!!result size == " << written;
+  if (ledger::is_verbose) {
+    LOG(ERROR) << "!!!recoverWallet result == " << result << "!!!result size == " << written;
+  }
   if (0 != result || 0 == written) {
-    DCHECK(false);
-
+    std::vector<braveledger_bat_helper::GRANT> empty;
+    ledger_->OnRecoverWallet(ledger::Result::LEDGER_ERROR, 0, empty);
     return;
   }
   state_->walletInfo_.keyInfoSeed_ = newSeed;
@@ -904,38 +949,59 @@ void BatClient::recoverWallet(const std::string& passPhrase) {
   braveledger_bat_helper::getPublicKeyFromSeed(secretKey, publicKey, newSecretKey);
   std::string publicKeyHex = braveledger_bat_helper::uint8ToHex(publicKey);
 
-  auto request_id = ledger_->LoadURL(buildURL((std::string)RECOVER_WALLET_PUBLIC_KEY + publicKeyHex, ""),
+  //LOG(ERROR) << "!!!recover URL == " << braveledger_bat_helper::buildURL((std::string)RECOVER_WALLET_PUBLIC_KEY + publicKeyHex, PREFIX_V2);
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)RECOVER_WALLET_PUBLIC_KEY + publicKeyHex, PREFIX_V2),
     std::vector<std::string>(), "", "",
     ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::recoverWalletPublicKeyCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 
 }
 
-void BatClient::recoverWalletPublicKeyCallback(bool result, const std::string& response) {
-  //LOG(ERROR) << "!!!recoverWalletPublicKeyCallback == " << response;
+void BatClient::recoverWalletPublicKeyCallback(bool result,
+                                               const std::string& response,
+                                               const std::map<std::string, std::string>& headers) {
+  if (!result) {
+    std::vector<braveledger_bat_helper::GRANT> empty;
+    ledger_->OnRecoverWallet(ledger::Result::LEDGER_ERROR, 0, empty);
+    return;
+  }
   std::string recoveryId;
   braveledger_bat_helper::getJSONValue("paymentId", response, recoveryId);
 
-  auto request_id = ledger_->LoadURL(buildURL((std::string)RECOVER_WALLET + recoveryId, ""),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)WALLET_PROPERTIES + recoveryId, PREFIX_V2),
     std::vector<std::string>(), "", "", ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
                              std::bind(&BatClient::recoverWalletCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3,
+                                       recoveryId));
 }
 
-void BatClient::recoverWalletCallback(bool result, const std::string& response) {
-  //LOG(ERROR) << "!!!recoverWalletCallback == " << response;
+void BatClient::recoverWalletCallback(bool result,
+                                      const std::string& response,
+                                      const std::map<std::string, std::string>& headers,
+                                      const std::string& recoveryId) {
+  if (!result) {
+    std::vector<braveledger_bat_helper::GRANT> empty;
+    ledger_->OnRecoverWallet(ledger::Result::LEDGER_ERROR, 0, empty);
+    return;
+  }
+
   braveledger_bat_helper::getJSONWalletInfo(response, state_->walletInfo_, state_->fee_currency_, state_->fee_amount_, state_->days_);
+  braveledger_bat_helper::getJSONRecoverWallet(response, state_->walletProperties_.balance_, state_->walletProperties_.probi_, state_->walletProperties_.grants_);
+  state_->walletInfo_.paymentId_ = recoveryId;
   saveState();
+  ledger_->OnRecoverWallet(ledger::Result::LEDGER_OK, state_->walletProperties_.balance_, state_->walletProperties_.grants_);
 }
 
-void BatClient::getPromotion(const std::string& lang, const std::string& forPaymentId) {
+void BatClient::getGrant(const std::string& lang, const std::string& forPaymentId) {
   std::string paymentId = forPaymentId;
   if (paymentId.empty()) {
     paymentId = state_->walletInfo_.paymentId_;
@@ -954,50 +1020,121 @@ void BatClient::getPromotion(const std::string& lang, const std::string& forPaym
     }
   }
 
-  auto request_id = ledger_->LoadURL(buildURL((std::string)GET_SET_PROMOTION + arguments, ""),
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)GET_SET_PROMOTION + arguments, PREFIX_V2),
     std::vector<std::string>(), "", "", ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
-                             std::bind(&BatClient::getPromotionCallback,
+                             std::bind(&BatClient::getGrantCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::getPromotionCallback(bool result, const std::string& response) {
-  LOG(ERROR) << "!!!getPromotionCallback == " << response;
+void BatClient::getGrantCallback(bool success,
+                                 const std::string& response,
+                                 const std::map<std::string, std::string>& headers) {
+  braveledger_bat_helper::GRANT properties;
+
+  if (!success) {
+    ledger_->OnGrant(ledger::Result::LEDGER_ERROR, properties);
+    return;
+  }
+
+  bool ok = braveledger_bat_helper::loadFromJson(properties, response);
+
+  if (!ok) {
+    ledger_->OnGrant(ledger::Result::LEDGER_ERROR, properties);
+    return;
+  }
+
+  state_->grant_ = properties;
+  ledger_->OnGrant(ledger::Result::LEDGER_OK, properties);
 }
 
-void BatClient::setPromotion(const std::string& promotionId, const std::string& captchaResponse) {
+void BatClient::setGrant(const std::string& captchaResponse, const std::string& promotionId) {
+  if (promotionId.empty() && state_->grant_.promotionId.empty()) {
+    braveledger_bat_helper::GRANT properties;
+    ledger_->OnGrantFinish(ledger::Result::LEDGER_ERROR, properties);
+    return;
+  }
+
+  std::string promoId = state_->grant_.promotionId;
+  if (!promotionId.empty()) {
+    promoId = promotionId;
+  }
+
   std::string keys[2] = {"promotionId", "captchaResponse"};
-  std::string values[2] = {promotionId, captchaResponse};
+  std::string values[2] = {promoId, captchaResponse};
   std::string payload = braveledger_bat_helper::stringify(keys, values, 2);
 
-  auto request_id = ledger_->LoadURL(buildURL((std::string)GET_SET_PROMOTION + "/" + state_->walletInfo_.paymentId_, ""),
-    std::vector<std::string>(), payload, "", ledger::URL_METHOD::PUT, &handler_);
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)GET_SET_PROMOTION + "/" + state_->walletInfo_.paymentId_, PREFIX_V2),
+       std::vector<std::string>(), payload, "application/json; charset=utf-8", ledger::URL_METHOD::PUT, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
-                             std::bind(&BatClient::setPromotionCallback,
+                             std::bind(&BatClient::setGrantCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::setPromotionCallback(bool result, const std::string& response) {
-  LOG(ERROR) << "!!!setPromotionCallback == " << response;
+void BatClient::setGrantCallback(bool success,
+                                 const std::string& response,
+                                 const std::map<std::string, std::string>& headers) {
+  std::string error;
+  unsigned int statusCode;
+  braveledger_bat_helper::GRANT grant;
+  braveledger_bat_helper::getJSONResponse(response, statusCode, error);
+
+  if (!success) {
+    if (statusCode == 422) {
+      ledger_->OnGrantFinish(ledger::Result::CAPTCHA_FAILED, grant);
+    } else {
+      ledger_->OnGrantFinish(ledger::Result::LEDGER_ERROR, grant);
+    }
+    return;
+  }
+
+  bool ok = braveledger_bat_helper::loadFromJson(grant, response);
+  if (!ok) {
+    ledger_->OnGrantFinish(ledger::Result::LEDGER_ERROR, grant);
+    return;
+  }
+
+  grant.promotionId = state_->grant_.promotionId;
+  state_->grant_ = grant;
+
+  ledger_->OnGrantFinish(ledger::Result::LEDGER_OK, grant);
 }
 
-void BatClient::getPromotionCaptcha() {
-  auto request_id = ledger_->LoadURL(buildURL((std::string)GET_PROMOTION_CAPTCHA + state_->walletInfo_.paymentId_, ""),
-    std::vector<std::string>(), "", "",
+void BatClient::getGrantCaptcha() {
+  std::vector<std::string> headers;
+  headers.push_back("brave-product:brave-core");
+  auto request_id = ledger_->LoadURL(braveledger_bat_helper::buildURL((std::string)GET_PROMOTION_CAPTCHA + state_->walletInfo_.paymentId_, PREFIX_V2),
+   headers, "", "",
       ledger::URL_METHOD::GET, &handler_);
   handler_.AddRequestHandler(std::move(request_id),
-                             std::bind(&BatClient::getPromotionCaptchaCallback,
+                             std::bind(&BatClient::getGrantCaptchaCallback,
                                        this,
                                        _1,
-                                       _2));
+                                       _2,
+                                       _3));
 }
 
-void BatClient::getPromotionCaptchaCallback(bool result, const std::string& response) {
-  LOG(ERROR) << "!!!getPromotionCaptchaCallback == " << response;
+void BatClient::getGrantCaptchaCallback(bool success,
+                                        const std::string& response,
+                                        const std::map<std::string, std::string>& headers) {
+
+  auto it = headers.find("captcha-hint");
+  if (!success || it == headers.end()) {
+    // TODO NZ Add error handler
+    return;
+  }
+
+  ledger_->OnGrantCaptcha(response, it->second);
+}
+
+bool BatClient::isWalletCreated() const {
+  return state_->bootStamp_ != 0u;
 }
 
 }  // namespace braveledger_bat_client

@@ -41,6 +41,9 @@
 		27A71445211A25D000F67A5E /* libWallyCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DB40E8211A00F7001B8543 /* libWallyCore.a */; };
 		27CCB604211A133A00E36BE8 /* tweetnacl.h in Headers */ = {isa = PBXBuildFile; fileRef = 27CCB602211A133A00E36BE8 /* tweetnacl.h */; };
 		27CCB605211A133A00E36BE8 /* tweetnacl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCB603211A133A00E36BE8 /* tweetnacl.cc */; };
+		27D38F57215D0755007E9A47 /* media_publisher_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F54215D0755007E9A47 /* media_publisher_info.h */; };
+		27D38F58215D0755007E9A47 /* grant.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F55215D0755007E9A47 /* grant.h */; };
+		27D38F59215D0755007E9A47 /* balance_report_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F56215D0755007E9A47 /* balance_report_info.h */; };
 		27DB42C0211A0136001B8543 /* aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB41F4211A0119001B8543 /* aes.cc */; };
 		27DB42C1211A013C001B8543 /* base58.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB4161211A0119001B8543 /* base58.cc */; };
 		27DB42C2211A0144001B8543 /* bip32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB415B211A0119001B8543 /* bip32.cc */; };
@@ -676,6 +679,9 @@
 		27CCB60C211A14EC00E36BE8 /* crypto_scrypt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crypto_scrypt.c; sourceTree = "<group>"; };
 		27CCB60D211A14EC00E36BE8 /* crypto_scrypt_smix_sse2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crypto_scrypt_smix_sse2.c; sourceTree = "<group>"; };
 		27CCB60E211A14EC00E36BE8 /* crypto_scrypt_smix.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = crypto_scrypt_smix.c; sourceTree = "<group>"; };
+		27D38F54215D0755007E9A47 /* media_publisher_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = media_publisher_info.h; sourceTree = "<group>"; };
+		27D38F55215D0755007E9A47 /* grant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = grant.h; sourceTree = "<group>"; };
+		27D38F56215D0755007E9A47 /* balance_report_info.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = balance_report_info.h; sourceTree = "<group>"; };
 		27DB40E8211A00F7001B8543 /* libWallyCore.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libWallyCore.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27DB40F2211A0118001B8543 /* wally_script.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wally_script.h; sourceTree = "<group>"; };
 		27DB40F3211A0118001B8543 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
@@ -1842,6 +1848,9 @@
 		2753CB402119EB0200F305D6 /* ledger */ = {
 			isa = PBXGroup;
 			children = (
+				27D38F56215D0755007E9A47 /* balance_report_info.h */,
+				27D38F55215D0755007E9A47 /* grant.h */,
+				27D38F54215D0755007E9A47 /* media_publisher_info.h */,
 				2753CB412119EB0200F305D6 /* export.h */,
 				2753CB422119EB0200F305D6 /* ledger_client.h */,
 				2753CB432119EB0200F305D6 /* wallet_info.h */,
@@ -4232,11 +4241,14 @@
 				A1FDE6D620D2AA7400F92CAF /* Ledger.h in Headers */,
 				2753CB742119EB0200F305D6 /* url_request_handler.h in Headers */,
 				2753CB622119EB0200F305D6 /* export.h in Headers */,
+				27D38F58215D0755007E9A47 /* grant.h in Headers */,
 				2753CB6B2119EB0200F305D6 /* rapidjson_bat_helper.h in Headers */,
+				27D38F59215D0755007E9A47 /* balance_report_info.h in Headers */,
 				2753CB752119EB0200F305D6 /* bat_helper_platform.h in Headers */,
 				2753CB7D2119EB0200F305D6 /* ledger_task_runner_impl.h in Headers */,
 				2753CB692119EB0200F305D6 /* ledger.h in Headers */,
 				2753CB652119EB0200F305D6 /* ledger_task_runner.h in Headers */,
+				27D38F57215D0755007E9A47 /* media_publisher_info.h in Headers */,
 				2753CB7C2119EB0200F305D6 /* ledger_impl.h in Headers */,
 				2753CB642119EB0200F305D6 /* wallet_info.h in Headers */,
 				2753CB6C2119EB0200F305D6 /* bat_get_media.h in Headers */,

@@ -12,8 +12,20 @@
 namespace ledger {
 
 LEDGER_EXPORT enum Result {
-  OK = 0,
-  ERROR = 1,
+  LEDGER_OK = 0,
+  LEDGER_ERROR = 1,
+  NO_PUBLISHER_STATE = 2,
+  NO_LEDGER_STATE = 3,
+  INVALID_PUBLISHER_STATE = 4,
+  INVALID_LEDGER_STATE = 5,
+  CAPTCHA_FAILED = 6,
+  NO_PUBLISHER_LIST = 7,
+
+  TOO_MANY_RESULTS,
+  NOT_FOUND,
+
+  REGISTRATION_VERIFICATION_FAILED,
+  BAD_REGISTRATION_RESPONSE,
   // some more useful result codes should go here
 };
 
@@ -31,8 +43,15 @@ class LEDGER_EXPORT LedgerCallbackHandler {
   virtual void OnPublisherStateSaved(Result result) {};
 
   virtual void OnURLRequestResponse(uint64_t request_id,
+                                    const std::string& url,
                                     int response_code,
-                                    const std::string& response) {};
+                                    const std::string& response,
+                                    const std::map<std::string, std::string>& headers) {};
+
+  virtual void OnPublishersListSaved(Result result) {};
+
+  virtual void OnPublisherListLoaded(Result result,
+                                      const std::string& data) {};
 };
 
 }  // namespace ledger
