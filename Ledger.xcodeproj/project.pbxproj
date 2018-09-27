@@ -44,7 +44,6 @@
 		27D38F57215D0755007E9A47 /* media_publisher_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F54215D0755007E9A47 /* media_publisher_info.h */; };
 		27D38F58215D0755007E9A47 /* grant.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F55215D0755007E9A47 /* grant.h */; };
 		27D38F59215D0755007E9A47 /* balance_report_info.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D38F56215D0755007E9A47 /* balance_report_info.h */; };
-		27D38F5C215D0CC5007E9A47 /* relic_rand_rdrnd.c in Sources */ = {isa = PBXBuildFile; fileRef = 27D38F5B215D0CC4007E9A47 /* relic_rand_rdrnd.c */; };
 		27DB42C0211A0136001B8543 /* aes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB41F4211A0119001B8543 /* aes.cc */; };
 		27DB42C1211A013C001B8543 /* base58.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB4161211A0119001B8543 /* base58.cc */; };
 		27DB42C2211A0144001B8543 /* bip32.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DB415B211A0119001B8543 /* bip32.cc */; };
@@ -4571,7 +4570,6 @@
 				A1FDE73320D2ACDE00F92CAF /* relic_bn_lcm.c in Sources */,
 				A1FDE8D620D2AD2A00F92CAF /* relic_fb_inv_low.c in Sources */,
 				A1FDE9DC20D2AD2A00F92CAF /* relic_ep_util.c in Sources */,
-				27D38F5C215D0CC5007E9A47 /* relic_rand_rdrnd.c in Sources */,
 				A1FDE9BC20D2AD2A00F92CAF /* relic_ep2_pck.c in Sources */,
 				A1FDE8C420D2AD2A00F92CAF /* relic_fpx_mul_low.c in Sources */,
 				A1FDE9F620D2AD2A00F92CAF /* relic_fp_add.c in Sources */,
